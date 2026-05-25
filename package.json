@@ -1,0 +1,34 @@
+{
+  "name": "RTwit",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/icon": "^2.2.1",
+    "@nuxtjs/cloudinary": "^4.0.0",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@vueup/vue-quill": "^1.2.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.1",
+    "nodemailer": "^8.0.7",
+    "nuxt": "^4.4.2",
+    "nuxt-security": "^2.6.0",
+    "quill": "^2.0.3",
+    "vue": "^3.5.30",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@iconify-json/streamline-ultimate": "^1.2.2",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^8.0.0"
+  }
+}
