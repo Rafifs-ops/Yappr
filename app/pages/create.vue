@@ -22,6 +22,8 @@ definePageMeta({
 })
 const imageFile = ref(null);
 const imagePreview = ref('');
+const videoFile = ref(null);
+const videoPreview = ref('');
 const isUploading = ref(false);
 
 const fileInput = ref(null);
@@ -34,22 +36,57 @@ function onFileChange(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+    const reader = new FileReader();
+
+    // Cek apakah file adalah video atau gambar
+    if (file.type.startsWith('image/')) {
+        imageFile.value = file;
+        reader.onload = (event) => { imagePreview.value = event.target.result; };
+    } else if (file.type.startsWith('video/')) {
+        // Cek durasi video sebelum diproses
+        const videoElement = document.createElement('video');
+        videoElement.preload = 'metadata';
+
+        videoElement.onloadedmetadata = function () {
+            window.URL.revokeObjectURL(videoElement.src); // Bersihkan memori
+
+            // Cek jika durasi lebih dari 60 detik
+            if (videoElement.duration > 60) {
+                alert('Durasi video terlalu panjang! Maksimal 1 menit (60 detik).');
+                // Reset input file
+                if (fileInput.value) fileInput.value.value = '';
+                return;
+            }
+
+            // Jika lolos validasi, proses video
+            videoFile.value = file;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                videoPreview.value = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Memuat file sementara untuk membaca metadata
+        videoElement.src = URL.createObjectURL(file);
+    } else {
+        alert('Tolong pilih file gambar atau video');
         return;
     }
 
-    imageFile.value = file;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        imagePreview.value = event.target.result;
-    };
     reader.readAsDataURL(file);
 }
 
 function removeImage() {
     imageFile.value = null;
     imagePreview.value = '';
+    // Kosongkan input file agar bisa memilih file yang sama lagi jika perlu
+    if (fileInput.value) fileInput.value.value = '';
+}
+
+function removeVideo() {
+    videoFile.value = null;
+    videoPreview.value = '';
     if (fileInput.value) fileInput.value.value = '';
 }
 
@@ -58,8 +95,8 @@ async function handlePost() {
     const isContentEmpty = !content.value || content.value === '<p><br></p>';
 
     // PERBAIKAN: Mengganti text.value menjadi isContentEmpty
-    if (isContentEmpty && !imageFile.value) {
-        alert('Tolong masukkan teks atau pilih gambar.');
+    if (isContentEmpty && !imageFile.value && !videoFile.value) {
+        alert('Tolong masukkan teks, pilih gambar, atau pilih video.');
         return;
     }
 
@@ -72,6 +109,7 @@ async function handlePost() {
             body: {
                 text: finalText,
                 image: imagePreview.value, // This is the base64 string
+                video: videoPreview.value,
                 hashtags: hashtags,
             }
         });
@@ -130,13 +168,24 @@ async function handlePost() {
                         </button>
                     </div>
 
+                    <!-- Video Preview Area -->
+                    <div v-if="videoPreview"
+                        class="relative group/vid rounded-xl overflow-hidden border border-purple-800/50 shadow-sm mt-4">
+                        <video :src="videoPreview" controls class="w-full h-auto max-h-96"></video>
+                        <button @click="removeVideo"
+                            class="absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 p-2.5 rounded-xl text-white shadow-lg border border-rose-400/20">
+                            <Icon name="streamline-ultimate:bin-1-bold" class="w-4 h-4" />
+                        </button>
+                    </div>
+
                     <div class="flex items-center justify-between pt-2">
                         <div class="flex items-center space-x-3">
-                            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*" class="hidden" />
+                            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*,video/*"
+                                class="hidden" />
                             <button @click="triggerFileInput"
-                                class="flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-mono text-xs transition-colors bg-purple-900/200/5 px-4 py-2.5 rounded-xl border border-purple-500/20 hover:border-purple-500/40">
+                                class="flex items-center space-x-2 btn-neon-purple py-2 px-4 rounded-md font-semibold">
                                 <Icon name="streamline-ultimate:picture-stack-landscape-bold" class="w-4 h-4" />
-                                <span>ADD IMAGE</span>
+                                <span> ADD MEDIA</span>
                             </button>
                         </div>
 

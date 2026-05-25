@@ -16,6 +16,10 @@ export default defineNuxtConfig({
     useSecure: true,
   },
   security: {
+    requestSizeLimiter: {
+      maxRequestSizeInBytes: 104857600, // 100MB untuk mengakomodasi upload video base64
+      maxUploadFileRequestInBytes: 104857600,
+    },
     rateLimiter: {
       tokensPerInterval: 50, // Jumlah request maksimal
       interval: 'hour',      // Jangka waktu (ms, 'second', 'minute', 'hour', 'day')

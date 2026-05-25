@@ -2,26 +2,28 @@ import { Twit } from '../../models/Twit.schema';
 import { session } from '../../utils/session';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+});
+
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
         const user = await session(event);
-        const { twitId, text, image, hashtags } = body;
+        const { twitId, text, image, video, hashtags } = body;
 
         if (!text || !user) {
             throw createError({ statusCode: 400, statusMessage: 'Text dan UserId wajib diisi' });
         }
 
         let imageUrl = '';
-        if (image) {
-            // Configure Cloudinary
-            cloudinary.config({
-                cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-                api_key: process.env.CLOUDINARY_API_KEY,
-                api_secret: process.env.CLOUDINARY_API_SECRET,
-                secure: true
-            });
+        let videoUrl = '';
 
+        if (image) {
             try {
                 const uploadResult = await cloudinary.uploader.upload(image, {
                     folder: 'twit_images_RTwit',
@@ -33,11 +35,25 @@ export default defineEventHandler(async (event) => {
                 throw createError({ statusCode: 500, statusMessage: 'Gagal upload gambar ke Cloudinary' });
             }
         }
+        if (video) {
+            try {
+                const uploadResult = await cloudinary.uploader.upload_large(video, {
+                    folder: 'twit_videos_RTwit',
+                    resource_type: 'video',
+                    chunk_size: 6000000 // 6MB chunks
+                });
+                videoUrl = uploadResult.secure_url;
+            } catch (err: any) {
+                console.error('Cloudinary Upload Error:', err);
+                throw createError({ statusCode: 500, statusMessage: 'Gagal upload video ke Cloudinary' });
+            }
+        }
 
         const newTwit = await Twit.create({
             user: user.id,
             text: text,
             image: imageUrl,
+            video: videoUrl,
             hashtags: hashtags || [],
             likesCount: 0,
             commentCount: 0,

@@ -12,6 +12,7 @@ const twitSchema = new Schema({
     text: { type: String, required: true, maxlength: 280 },
     /** Optional image attachment as a URL or base64 string */
     image: { type: String },
+    video: { type: String },
     /** Counter for likes to avoid frequent aggregation queries */
     likesCount: { type: Number, default: 0 },
     /** Counter for comments (replies) */
