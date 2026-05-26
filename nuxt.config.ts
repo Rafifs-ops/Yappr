@@ -7,7 +7,8 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
-    'nuxt-security'
+    'nuxt-security',
+    'nuxt-socket-io'
   ],
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -39,5 +40,10 @@ export default defineNuxtConfig({
   css: [
     'quill/dist/quill.snow.css', // Pastikan CSS ini dimuat global
     '~/assets/css/main.css'
-  ]
+  ],
+  nitro: {
+    experimental: {
+      websocket: true
+    }
+  }
 })
