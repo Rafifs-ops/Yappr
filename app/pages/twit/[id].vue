@@ -258,7 +258,7 @@ const deleteComment = async (commentId) => {
                     </div>
                 </div>
             </template>
-            <p v-else class="text-purple-300 text-xs italic font-mono pl-1 py-4">// Awaiting responses to register...
+            <p v-else class="text-purple-300 text-xs italic font-mono pl-1 py-4">Belum ada komentar...
             </p>
         </div>
     </main>

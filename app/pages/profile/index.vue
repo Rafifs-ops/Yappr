@@ -53,7 +53,7 @@ const { data: response, pending, error } = await useFetch(`/api/user/${auth.sess
 
             <!-- Header for user's tweets -->
             <div class="border-b border-purple-800/50 pb-2 max-w-xl mx-auto w-full">
-                <span class="font-orbitron text-[10px] font-bold text-purple-400 tracking-widest">//
+                <span class="font-orbitron text-[10px] font-bold text-purple-400 tracking-widest">
                     YAPPINGAN {{ response?.user?.username }}</span>
             </div>
 

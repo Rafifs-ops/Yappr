@@ -187,6 +187,12 @@ async function deleteTwit(twitId) {
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-100/10 to-transparent pointer-events-none">
                     </div>
                 </div>
+                <div v-if="twit.video"
+                    class="mt-4 relative group/vid rounded-xl overflow-hidden border border-purple-800/50 shadow-sm">
+                    <video :src="twit.video" controls preload="metadata"
+                        class="w-full h-auto max-h-[500px] object-cover bg-black/20">
+                    </video>
+                </div>
 
                 <!-- Interactive Stats Bar -->
                 <div class="mt-5 flex justify-between items-center border-t border-purple-800/40 pt-3">

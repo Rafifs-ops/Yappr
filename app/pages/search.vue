@@ -10,7 +10,12 @@ useHead({
     ]
 })
 
+// Fetch profil user
 const { data: profiles, pending, error } = await useFetch('/api/user');
+
+// Fetch trending hashtags
+const { data: trendingHashtags, pending: pendingHashtags } = await useFetch('/api/hashtags/trending');
+
 const query = ref('');
 
 const dataProfile = computed(() => {
@@ -47,13 +52,38 @@ const dataProfile = computed(() => {
                 placeholder="CARI USERNAME..." v-model="query">
         </div>
 
-        <div v-if="!query" class="text-center py-16">
-            <div class="relative mx-auto mb-4 flex flex-col items-center justify-center">
+        <div v-if="!query" class="text-center py-8">
+            <div class="relative mx-auto mb-8 flex flex-col items-center justify-center">
                 <h1 class="font-orbitron font-bold text-purple-100 tracking-wider text-sm">
                     CARI TEMAN BARU....
                 </h1>
                 <p class="text-purple-300 text-[10px] font-mono tracking-widest mt-1">Cari temanmu dan yapping bareng
                 </p>
+            </div>
+
+            <div class="mt-8 border-t border-purple-800/30 pt-6">
+                <h2
+                    class="font-orbitron text-purple-400 text-xs tracking-[0.2em] mb-4 flex items-center justify-center gap-2">
+                    <Icon name="ph:trend-up-bold" class="w-4 h-4" /> TRENDING MINGGU INI
+                </h2>
+
+                <div v-if="pendingHashtags" class="flex justify-center mt-4">
+                    <Icon name="svg-spinners:3-dots-fade" class="w-6 h-6 text-purple-600" />
+                </div>
+
+                <div v-else-if="trendingHashtags && trendingHashtags.length > 0"
+                    class="flex flex-wrap gap-2 justify-center px-4">
+                    <NuxtLink v-for="item in trendingHashtags" :key="item.hashtag" :to="`/twits/${item.hashtag}`"
+                        class="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-900/20 text-purple-200 text-xs font-mono hover:bg-purple-800/50 hover:border-purple-400 transition-all cursor-pointer flex items-center gap-1">
+                        <span class="text-purple-400">#</span>{{ item.hashtag }}
+                        <span class="text-[9px] text-purple-500 ml-1 bg-purple-950 px-1.5 rounded-full">{{ item.count
+                        }}</span>
+                    </NuxtLink>
+                </div>
+
+                <div v-else class="text-purple-500/50 text-xs font-mono">
+                    Belum ada hashtag trending saat ini.
+                </div>
             </div>
         </div>
 
