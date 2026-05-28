@@ -43,26 +43,17 @@ watch(fetchedTwits, (newData) => {
 
         <div v-else-if="!twits?.length && !id"
             class="text-center font-orbitron font-bold text-sm p-12 text-purple-400 bg-purple-900/30/30 rounded-2xl border border-purple-800/50/50 max-w-xl mx-auto shadow-inner">
-            <Icon name="ph:circle-dashed" class="w-12 h-12 mx-auto mb-3 text-purple-400 animate-spin" />
             BELUM ADA YANG UPLOAD TWIT
         </div>
 
         <div v-else-if="!twits?.length && id"
             class="text-center font-orbitron font-bold text-sm p-12 text-purple-400 bg-purple-900/30/30 rounded-2xl border border-purple-800/50/50 max-w-xl mx-auto shadow-inner">
-            <Icon name="ph:user-focus" class="w-12 h-12 mx-auto mb-3 text-purple-400" />
             USER INI BELUM MENGUPLOAD TWIT
         </div>
 
         <div v-else class="flex flex-col gap-4 w-full">
-            <TwitCard
-                v-for="twit in twits"
-                :key="twit._id"
-                :twit="twit"
-                :current-user-id="auth.session?.id"
-                @toggle-like="toggleLike"
-                @toggle-repost="toggleRepost"
-                @delete-twit="deleteTwit"
-            />
+            <TwitCard v-for="twit in twits" :key="twit._id" :twit="twit" :current-user-id="auth.session?.id"
+                @toggle-like="toggleLike" @toggle-repost="toggleRepost" @delete-twit="deleteTwit" />
         </div>
     </main>
 </template>

@@ -1,5 +1,4 @@
 import { Message } from '../models/Message.schema';
-import { User } from '../models/User.schema';
 
 export default defineWebSocketHandler({
     open(peer) {
@@ -9,7 +8,7 @@ export default defineWebSocketHandler({
     async message(peer, message) {
         try {
             const data = JSON.parse(message.text());
-            
+
             // Allow subscribing to a specific chat room
             if (data.type === 'subscribe') {
                 peer.subscribe(data.chatId);
@@ -33,7 +32,7 @@ export default defineWebSocketHandler({
                     type: 'new_message',
                     message: newMessage
                 }));
-                
+
                 // Kirim balik ke pengirim karena peer.publish tidak mengirim ke sender
                 peer.send(JSON.stringify({
                     type: 'new_message',

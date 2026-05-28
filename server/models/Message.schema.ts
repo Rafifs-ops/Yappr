@@ -11,7 +11,7 @@ const messageSchema = new Schema({
     },
     content: {
         type: String,
-        require: true
+        required: true
     },
     createdAt: {
         type: Date,

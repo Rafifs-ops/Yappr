@@ -7,8 +7,7 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
-    'nuxt-security',
-    'nuxt-socket-io'
+    'nuxt-security'
   ],
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
