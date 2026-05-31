@@ -6,12 +6,22 @@ import TwitCard from './TwitCard.vue';
 
 const auth = useAuth();
 const props = defineProps({
-    id: String
-})
+    id: String,
+    type: String
+});
 
 // Ambil data menggunakan useFetch
 const { data: fetchedTwits, pending, error } = await useFetch(() => {
-    return props.id ? `/api/twits/user/${props.id}` : '/api/twits'
+    if (props.id && props.type === 'liked') {
+        return `/api/twits/user/${props.id}/liked`;
+    }
+    if (props.id && props.type === 'reposted') {
+        return `/api/twits/user/${props.id}/reposted`;
+    }
+    if (props.id) {
+        return `/api/twits/user/${props.id}`;
+    }
+    return `/api/twits`;
 });
 
 // Buat state lokal yang 100% reaktif dan bisa kita modifikasi sesuka hati
@@ -33,7 +43,6 @@ watch(fetchedTwits, (newData) => {
 <template>
     <main class="w-full">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
-            <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
             SEDANG MENGAMBIL TWIT...
         </div>
         <div v-else-if="error" class="text-center p-8 text-rose-600 font-orbitron">

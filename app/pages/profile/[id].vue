@@ -60,6 +60,26 @@ const toggleFollow = async () => {
         alert(err.statusMessage || 'Gagal mengubah status follow');
     }
 }
+
+const isYappinganActive = ref(true);
+const isLikedActive = ref(false);
+const isRepostedActive = ref(false);
+
+function toggleTabs(tab) {
+    if (tab === 'yappingan') {
+        isYappinganActive.value = true;
+        isLikedActive.value = false;
+        isRepostedActive.value = false;
+    } else if (tab === 'liked') {
+        isYappinganActive.value = false;
+        isLikedActive.value = true;
+        isRepostedActive.value = false;
+    } else if (tab === 'reposted') {
+        isYappinganActive.value = false;
+        isLikedActive.value = false;
+        isRepostedActive.value = true;
+    }
+}
 </script>
 
 <template>
@@ -101,13 +121,13 @@ const toggleFollow = async () => {
                     class="flex justify-center gap-8 w-full border-t border-b border-purple-800/40 py-3.5 my-3 font-mono">
                     <div class="flex flex-col items-center">
                         <span class="font-bold text-purple-600 text-lg tracking-wider">{{ followStats.followersCount
-                        }}</span>
+                            }}</span>
                         <span class="text-[9px] text-purple-300 tracking-widest mt-1">FOLLOWERS</span>
                     </div>
                     <div class="w-[1px] bg-slate-200"></div>
                     <div class="flex flex-col items-center">
                         <span class="font-bold text-purple-600 text-lg tracking-wider">{{ followStats.followingCount
-                        }}</span>
+                            }}</span>
                         <span class="text-[9px] text-purple-300 tracking-widest mt-1">FOLLOWING</span>
                     </div>
                 </div>
@@ -128,7 +148,11 @@ const toggleFollow = async () => {
                     response?.user?.username }}</span>
             </div>
 
-            <Twits :id="userId" />
+            <!-- Tweet Tabs-->
+            <ProfileTwitsTab @toggleTabs="toggleTabs" :isYappinganActive="isYappinganActive"
+                :isLikedActive="isLikedActive" :isRepostedActive="isRepostedActive" />
+
+            <Twits :id="userId" :type="isYappinganActive ? 'yappingan' : isLikedActive ? 'liked' : 'reposted'" />
         </div>
     </main>
 </template>

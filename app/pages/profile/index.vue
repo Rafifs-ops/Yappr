@@ -8,6 +8,26 @@ definePageMeta({
 const auth = useAuth();
 
 const { data: response, pending, error } = await useFetch(`/api/user/${auth.session?.id}`);
+
+const isYappinganActive = ref(true);
+const isLikedActive = ref(false);
+const isRepostedActive = ref(false);
+
+function toggleTabs(tab) {
+    if (tab === 'yappingan') {
+        isYappinganActive.value = true;
+        isLikedActive.value = false;
+        isRepostedActive.value = false;
+    } else if (tab === 'liked') {
+        isYappinganActive.value = false;
+        isLikedActive.value = true;
+        isRepostedActive.value = false;
+    } else if (tab === 'reposted') {
+        isYappinganActive.value = false;
+        isLikedActive.value = false;
+        isRepostedActive.value = true;
+    }
+}
 </script>
 
 <template>
@@ -44,11 +64,18 @@ const { data: response, pending, error } = await useFetch(`/api/user/${auth.sess
                     {{ response?.user?.bio || 'No status log written.' }}
                 </p>
 
-                <button @click="auth.signOut"
-                    class="btn-neon-magenta text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5">
-                    <Icon name="ph:power-bold" class="w-4 h-4" />
-                    LOGOUT
-                </button>
+                <div class="flex space-x-2">
+                    <button @click="auth.signOut"
+                        class="btn-neon-magenta text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5">
+                        <Icon name="ph:power-bold" class="w-4 h-4" />
+                        LOGOUT
+                    </button>
+                    <NuxtLink to="/profile/edit"
+                        class="bg-cyan-400 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5">
+                        <Icon name="streamline-ultimate:single-neutral-actions-edit-2-bold" class="w-4 h-4" />
+                        EDIT PROFILE
+                    </NuxtLink>
+                </div>
             </div>
 
             <!-- Header for user's tweets -->
@@ -57,7 +84,12 @@ const { data: response, pending, error } = await useFetch(`/api/user/${auth.sess
                     YAPPINGAN {{ response?.user?.username }}</span>
             </div>
 
-            <Twits :id="auth.session?.id" />
+            <!-- Tweet Tabs-->
+            <ProfileTwitsTab @toggleTabs="toggleTabs" :isYappinganActive="isYappinganActive"
+                :isLikedActive="isLikedActive" :isRepostedActive="isRepostedActive" />
+
+            <Twits :id="auth.session?.id"
+                :type="isYappinganActive ? 'yappingan' : isLikedActive ? 'liked' : 'reposted'" />
         </div>
     </main>
 </template>

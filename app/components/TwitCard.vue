@@ -35,7 +35,7 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
                 <div class="flex flex-col">
                     <h2
                         class="font-bold text-white group-hover/user:text-purple-600 transition-colors duration-200 text-sm tracking-wide">
-                        {{ twit.user?.username || 'unknown_node' }}
+                        {{ twit.user?.username || 'unknown_profile' }}
                     </h2>
                     <span
                         class="font-mono text-[9px] tracking-wider text-purple-300 bg-purple-900/30 border border-purple-800/50/50 px-2 py-0.5 rounded mt-1">
@@ -74,7 +74,7 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
         <!-- Twit Attachment Image/Video -->
         <div v-if="twit.image"
             class="mt-4 relative group/img rounded-xl overflow-hidden border border-purple-800/50 shadow-sm">
-            <img :src="twit.image" alt="Transmission Attachment"
+            <img :src="twit.image"
                 class="w-full h-auto object-cover max-h-96 transition-transform duration-500 group-hover/img:scale-[1.02]" />
             <div class="absolute inset-0 bg-gradient-to-t from-slate-100/10 to-transparent pointer-events-none">
             </div>
