@@ -2,6 +2,7 @@ import { Twit } from "../../models/Twit.schema";
 import { Like } from "../../models/Like.schema";
 import { Repost } from "../../models/Repost.schema";
 import { session } from "../../utils/session";
+import { Follow } from "../../models/Follow.schema";
 
 /**
  * GET /api/twits
@@ -10,58 +11,114 @@ import { session } from "../../utils/session";
  * indicating whether the current user has interacted with each twit.
  */
 export default defineEventHandler(async (event) => {
+    let currentUser = null;
     try {
-        // 1. Fetch all twits and populate user details for the main twit and its reference (if it's a SubTwit)
-        const twits = await Twit.find({})
+        // Attempt to get the current user session
+        currentUser = await session(event);
+    } catch (e) {
+        // Silently ignore if not logged in (guest view)
+    }
+
+    try {
+        if (!currentUser) {
+            // Contoh untuk Guest: Tampilkan twit publik tanpa status follow
+            const publicTwits = await Twit.find({})
+                .sort({ createdAt: -1 })
+                .populate('user', 'username photo')
+                .populate({
+                    path: 'SubTwit.reference',
+                    populate: { path: 'user', select: 'username photo' }
+                })
+                .limit(15)
+                .lean();
+            return publicTwits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
+        }
+
+        const following = await Follow.find({ follower: currentUser.id }).lean();
+        const followingIds = following.map(f => f.following);
+
+        const twitsFromFollowing = await Twit.find({ user: { $in: followingIds } })
             .sort({ createdAt: -1 })
             .populate('user', 'username photo')
             .populate({
                 path: 'SubTwit.reference',
                 populate: { path: 'user', select: 'username photo' }
             })
+            .limit(15)
             .lean();
 
-        let currentUser = null;
-        try {
-            // Attempt to get the current user session
-            currentUser = await session(event);
-        } catch (e) {
-            // Silently ignore if not logged in (guest view)
-        }
+        const repostedTwitsfromFollowing = await Repost.find({ user: { $in: followingIds } })
+            .sort({ createdAt: -1 })
+            .populate('user', 'username photo')
+            .populate({
+                path: 'twit',
+                populate: [
+                    { path: 'user', select: 'username photo' },
+                    { path: 'SubTwit.reference', populate: { path: 'user', select: 'username photo' } }
+                ]
+            })
+            .limit(15)
+            .lean();
 
-        // If user is not logged in, assume they haven't liked or reposted any twits
-        if (!currentUser) {
-            return twits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
-        }
+        const LikedTwitsfromFollowing = await Like.find({ user: { $in: followingIds } })
+            .sort({ createdAt: -1 })
+            .populate('user', 'username photo')
+            .populate({
+                path: 'twit',
+                populate: [
+                    { path: 'user', select: 'username photo' },
+                    { path: 'SubTwit.reference', populate: { path: 'user', select: 'username photo' } }
+                ]
+            })
+            .limit(15)
+            .lean();
 
-        // Extract all twit IDs to run a bulk query for interactions
+        // Filter nilai null apabila parent twit terhapus
+        const repostedTwits = repostedTwitsfromFollowing
+            .filter(repost => repost.twit != null)
+            .map(repost => repost.twit);
+
+        const LikedTwits = LikedTwitsfromFollowing
+            .filter(like => like.twit != null)
+            .map(like => like.twit);
+
+        let allTwits = [...twitsFromFollowing, ...repostedTwits, ...LikedTwits];
+
+        // Hapus duplikasi berdasarkan ID
+        const uniqueTwitsMap = new Map();
+        for (const twit of allTwits) {
+            uniqueTwitsMap.set(twit._id.toString(), twit);
+        }
+        allTwits = Array.from(uniqueTwitsMap.values());
+
+        // Sorting aman di TypeScript
+        allTwits.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Potong jumlah hasil gabungan
+        const twits = allTwits.slice(0, 15);
+
         const twitIds = twits.map(t => t._id);
 
-        // Fetch all like and repost records for the current user concerning these twits
         const userLikes = await Like.find({
             user: currentUser.id,
             twit: { $in: twitIds }
         }).lean();
-        
+
         const userReposts = await Repost.find({
             user: currentUser.id,
             twit: { $in: twitIds }
         }).lean();
 
-        // Convert arrays to Sets for O(1) lookup time when mapping
         const likedTwitIds = new Set(userLikes.map(like => like.twit.toString()));
         const repostedTwitIds = new Set(userReposts.map(repost => repost.twit.toString()));
 
-        // Map over twits and attach the personalized interaction status
-        const twitsWithLikeStatus = twits.map(twit => {
+        return twits.map(twit => {
             return {
                 ...twit,
                 isLiked: likedTwitIds.has(twit._id.toString()),
                 isReposted: repostedTwitIds.has(twit._id.toString())
             };
         });
-
-        return twitsWithLikeStatus;
 
     } catch (error: any) {
         throw createError({ statusCode: 500, statusMessage: error.message || 'Internal Server Error' });
