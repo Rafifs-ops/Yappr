@@ -2,10 +2,39 @@ import { Twit } from "../../../models/Twit.schema";
 import { Like } from "../../../models/Like.schema";
 import { Repost } from "../../../models/Repost.schema";
 import { session } from "../../../utils/session";
+import { User } from "../../../models/User.schema";
+import { Follow } from "../../../models/Follow.schema";
 
 export default defineEventHandler(async (event) => {
     try {
         const id = getRouterParam(event, 'id');
+
+        const targetUser = await User.findById(id);
+        if (!targetUser) {
+            throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
+        }
+
+        let currentUser = null;
+        try {
+            currentUser = await session(event);
+        } catch (e) {
+            // Abaikan jika user belum login
+        }
+
+        if (targetUser.isPrivate && (!currentUser || currentUser.id !== id)) {
+            if (!currentUser) {
+                return [];
+            }
+            const follow = await Follow.findOne({ 
+                follower: currentUser.id, 
+                following: id, 
+                $or: [{ status: 'accepted' }, { status: { $exists: false } }] 
+            });
+            if (!follow) {
+                return [];
+            }
+        }
+
         // 1. Ambil twit
         const twits = await Twit.find({ user: id })
             .populate('user', 'username photo')
@@ -17,13 +46,6 @@ export default defineEventHandler(async (event) => {
 
         if (!twits) {
             throw createError({ statusCode: 404, statusMessage: 'Twit tidak ditemukan' });
-        }
-
-        let currentUser = null;
-        try {
-            currentUser = await session(event);
-        } catch (e) {
-            // Abaikan jika user belum login
         }
 
         // Jika user belum login, asumsikan belum ada yang dilike dan direpost

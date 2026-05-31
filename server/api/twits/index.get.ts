@@ -4,6 +4,8 @@ import { Repost } from "../../models/Repost.schema";
 import { session } from "../../utils/session";
 import { Follow } from "../../models/Follow.schema";
 
+import { User } from "../../models/User.schema";
+
 /**
  * GET /api/twits
  * Fetches a list of twits, sorted by the newest first.
@@ -22,7 +24,10 @@ export default defineEventHandler(async (event) => {
     try {
         if (!currentUser) {
             // Contoh untuk Guest: Tampilkan twit publik tanpa status follow
-            const publicTwits = await Twit.find({})
+            const publicUsers = await User.find({ isPrivate: { $ne: true } }).select('_id').lean();
+            const publicUserIds = publicUsers.map(u => u._id);
+
+            const publicTwits = await Twit.find({ user: { $in: publicUserIds } })
                 .sort({ createdAt: -1 })
                 .populate('user', 'username photo')
                 .populate({
@@ -34,7 +39,10 @@ export default defineEventHandler(async (event) => {
             return publicTwits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
         }
 
-        const following = await Follow.find({ follower: currentUser.id }).lean();
+        const following = await Follow.find({ 
+            follower: currentUser.id,
+            $or: [{ status: 'accepted' }, { status: { $exists: false } }]
+        }).lean();
         const followingIds = following.map(f => f.following);
 
         const twitsFromFollowing = await Twit.find({ user: { $in: followingIds } })

@@ -8,7 +8,8 @@ const userSchema = new Schema({
     bio: { type: String, required: true },
     emailVerifiedAt: { type: Date, default: null },
     followers: { type: Number, default: 0 },
-    following: { type: Number, default: 0 }
+    following: { type: Number, default: 0 },
+    isPrivate: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export const User = model('User', userSchema);

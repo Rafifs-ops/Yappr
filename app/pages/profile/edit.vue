@@ -17,7 +17,8 @@ const photoPreview = ref(null);
 const form = reactive({
     username: profile.value?.user?.username || '',
     bio: profile.value?.user?.bio || '',
-    photo: null
+    photo: null,
+    isPrivate: profile.value?.user?.isPrivate || false
 });
 
 const message = ref({
@@ -76,7 +77,8 @@ async function handleUpdate() {
                 id: auth.session?.id,
                 username: form.username,
                 bio: form.bio,
-                photo: form.photo
+                photo: form.photo,
+                isPrivate: form.isPrivate
             }
         });
 
@@ -111,6 +113,7 @@ watch(profile, (newData) => {
     if (newData?.user) {
         form.username = newData.user.username;
         form.bio = newData.user.bio || '';
+        form.isPrivate = newData.user.isPrivate || false;
     }
 }, { immediate: true });
 </script>
@@ -197,6 +200,27 @@ watch(profile, (newData) => {
                             {{ form.bio.length }} / 250
                         </div>
                     </div>
+                </div>
+
+                <!-- Private Account Field -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-orbitron text-[10px] text-purple-400 uppercase tracking-widest">
+                            Akun Privat
+                        </label>
+                        <div 
+                            @click="form.isPrivate = !form.isPrivate"
+                            class="w-11 h-6 bg-purple-900/50 rounded-full border border-purple-800/50 flex items-center cursor-pointer transition-colors"
+                            :class="{'bg-fuchsia-600': form.isPrivate, 'opacity-50 cursor-not-allowed': pending}"
+                        >
+                            <div class="bg-white w-4 h-4 rounded-full shadow-md transform transition-transform"
+                                :class="form.isPrivate ? 'translate-x-6' : 'translate-x-1'">
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-purple-300/70 font-mono leading-relaxed">
+                        Jika diaktifkan, hanya pengikut yang Anda setujui yang dapat melihat foto dan video Anda.
+                    </p>
                 </div>
 
                 <!-- Save Button -->

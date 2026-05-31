@@ -4,14 +4,16 @@ import { User } from "../../models/User.schema";
 export default defineEventHandler(async (event) => {
     try {
         const { follower, following } = await readBody(event);
-        await Follow.deleteOne({ follower, following });
+        const follow = await Follow.findOneAndDelete({ follower, following });
 
-        await User.findByIdAndUpdate(follower, { $inc: { following: -1 } });
-        await User.findByIdAndUpdate(following, { $inc: { followers: -1 } });
+        if (follow && follow.status === 'accepted') {
+            await User.findByIdAndUpdate(follower, { $inc: { following: -1 } });
+            await User.findByIdAndUpdate(following, { $inc: { followers: -1 } });
+        }
 
         return {
             statusCode: 200,
-            statusMessage: "User unfollowed successfully",
+            statusMessage: "Follow removed successfully",
         };
     } catch (error: any) {
         throw createError({

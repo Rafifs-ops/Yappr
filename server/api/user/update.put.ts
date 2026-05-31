@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
         }
 
-        const { id, username, bio, photo } = body;
+        const { id, username, bio, photo, isPrivate } = body;
 
         // Validasi jika user ID di body berbeda dengan session (opsional)
         if (id && id !== currentUser.id) {
@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
         const updateData: any = {};
         if (username) updateData.username = username;
         if (bio !== undefined) updateData.bio = bio;
+        if (isPrivate !== undefined) updateData.isPrivate = isPrivate;
 
         // Jika ada foto baru (base64 string)
         if (photo && photo.startsWith('data:image')) {

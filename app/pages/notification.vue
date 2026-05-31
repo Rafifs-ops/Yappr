@@ -1,5 +1,9 @@
 <script setup>
+import { useAuth } from '~/stores/Auth';
+
 const { $csrfFetch } = useNuxtApp();
+const auth = useAuth();
+
 definePageMeta({
     layout: 'default'
 })
@@ -21,6 +25,8 @@ const getIcon = (type) => {
         case 'comment': return 'streamline-ultimate:messages-bubble-square-typing-bold'
         case 'reply': return 'streamline-ultimate:messages-people-person-bubble-circle-1-bold'
         case 'follow': return 'streamline-ultimate:following-1-bold'
+        case 'follow_request': return 'ph:user-plus-bold'
+        case 'follow_accept': return 'ph:check-circle-bold'
         default: return 'streamline-ultimate:alert-bell-notification-2-bold'
     }
 }
@@ -31,7 +37,24 @@ const getIconColor = (type) => {
         case 'comment': return 'text-sky-500'
         case 'reply': return 'text-emerald-500'
         case 'follow': return 'text-violet-500'
+        case 'follow_request': return 'text-amber-500'
+        case 'follow_accept': return 'text-emerald-400'
         default: return 'text-purple-300'
+    }
+}
+
+const handleRequest = async (notif, action) => {
+    try {
+        await $csrfFetch(`/api/follow/${action}`, {
+            method: 'POST',
+            body: {
+                follower: notif.sender._id || notif.sender,
+                following: auth.session.id
+            }
+        });
+        refresh();
+    } catch (err) {
+        alert(err.statusMessage || 'Gagal memproses permintaan');
     }
 }
 
@@ -103,6 +126,12 @@ const formatDate = (date) => {
                         <span class="font-bold text-purple-600">@{{ notif.sender?.username }}</span>
                         {{ notif.message }}
                     </p>
+                    
+                    <!-- Action Buttons for Follow Request -->
+                    <div v-if="notif.type === 'follow_request'" class="flex gap-2 mt-3">
+                        <button @click.stop="handleRequest(notif, 'accept')" class="px-4 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors shadow-[0_0_10px_rgba(236,72,153,0.3)]">TERIMA</button>
+                        <button @click.stop="handleRequest(notif, 'reject')" class="px-4 py-1.5 bg-purple-900/50 hover:bg-purple-800/50 text-purple-300 border border-purple-800/50 rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors">TOLAK</button>
+                    </div>
                 </div>
             </div>
         </div>

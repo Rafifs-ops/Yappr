@@ -16,6 +16,7 @@ const { data: response, pending, error } = await useFetch(`/api/user/${userId}`)
 // State lokal untuk Optimistic UI
 const followStats = ref({
     isFollowing: false,
+    followStatus: null,
     followersCount: 0,
     followingCount: 0
 });
@@ -25,6 +26,7 @@ watchEffect(() => {
     if (response.value) {
         followStats.value = {
             isFollowing: response.value.isFollowed,
+            followStatus: response.value.followStatus,
             followersCount: response.value.user.followers,
             followingCount: response.value.user.following
         };
@@ -37,11 +39,25 @@ const toggleFollow = async () => {
     if (!auth.session?.id || auth.session.id === userId) return;
 
     // Simpan state sebelum berubah untuk antisipasi rollback
-    const previousStatus = followStats.value.isFollowing;
+    const previousStatus = followStats.value.followStatus;
+    const isPrivate = response.value?.user?.isPrivate;
 
     // OPTIMISTIC UPDATE: UI LANGSUNG BERUBAH
-    followStats.value.isFollowing = !followStats.value.isFollowing;
-    followStats.value.followersCount += followStats.value.isFollowing ? 1 : -1;
+    if (previousStatus) {
+        followStats.value.isFollowing = false;
+        followStats.value.followStatus = null;
+        if (previousStatus === 'accepted') {
+            followStats.value.followersCount -= 1;
+        }
+    } else {
+        if (isPrivate) {
+            followStats.value.followStatus = 'pending';
+        } else {
+            followStats.value.isFollowing = true;
+            followStats.value.followStatus = 'accepted';
+            followStats.value.followersCount += 1;
+        }
+    }
 
     try {
         const endpoint = previousStatus ? '/api/follow/remove' : '/api/follow/add';
@@ -55,8 +71,13 @@ const toggleFollow = async () => {
         });
     } catch (err) {
         // ROLLBACK
-        followStats.value.isFollowing = previousStatus;
-        followStats.value.followersCount += previousStatus ? 1 : -1;
+        followStats.value.followStatus = previousStatus;
+        followStats.value.isFollowing = previousStatus === 'accepted';
+        if (!previousStatus && !isPrivate) {
+            followStats.value.followersCount -= 1;
+        } else if (previousStatus === 'accepted') {
+            followStats.value.followersCount += 1;
+        }
         alert(err.statusMessage || 'Gagal mengubah status follow');
     }
 }
@@ -134,25 +155,38 @@ function toggleTabs(tab) {
 
                 <!-- Follow / Unfollow Action Button -->
                 <button v-if="auth.session?.id && auth.session.id !== userId" @click="toggleFollow"
-                    :class="followStats.isFollowing ? 'btn-neon-magenta' : 'btn-neon-purple'"
+                    :class="followStats.followStatus === 'pending' ? 'bg-purple-800/50 text-purple-300' : (followStats.isFollowing ? 'btn-neon-magenta' : 'btn-neon-purple')"
                     class="mt-2 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg flex items-center gap-1.5 transition-all">
-                    <Icon :name="followStats.isFollowing ? 'ph:user-minus-bold' : 'ph:user-plus-bold'"
+                    <Icon :name="followStats.followStatus === 'pending' ? 'ph:clock-bold' : (followStats.isFollowing ? 'ph:user-minus-bold' : 'ph:user-plus-bold')"
                         class="w-4 h-4" />
-                    {{ followStats.isFollowing ? 'UNFOLLOW' : 'FOLLOW' }}
+                    {{ followStats.followStatus === 'pending' ? 'REQUESTED' : (followStats.isFollowing ? 'UNFOLLOW' : 'FOLLOW') }}
                 </button>
             </div>
 
             <!-- Header for user's tweets -->
-            <div class="border-b border-purple-800/50 pb-2 max-w-xl mx-auto w-full">
-                <span class="font-orbitron text-[10px] font-bold text-purple-400 tracking-widest">Yappingan {{
-                    response?.user?.username }}</span>
+            <template v-if="!response?.user?.isPrivate || followStats.isFollowing || auth.session?.id === userId">
+                <div class="border-b border-purple-800/50 pb-2 max-w-xl mx-auto w-full">
+                    <span class="font-orbitron text-[10px] font-bold text-purple-400 tracking-widest">Yappingan {{
+                        response?.user?.username }}</span>
+                </div>
+
+                <!-- Tweet Tabs-->
+                <ProfileTwitsTab @toggleTabs="toggleTabs" :isYappinganActive="isYappinganActive"
+                    :isLikedActive="isLikedActive" :isRepostedActive="isRepostedActive" />
+
+                <Twits :id="userId" :type="isYappinganActive ? 'yappingan' : isLikedActive ? 'liked' : 'reposted'" />
+            </template>
+
+            <!-- Private Account Lock UI -->
+            <div v-else class="flex flex-col items-center justify-center py-16 px-4 bg-[#1a0b2e]/60 backdrop-blur-sm rounded-3xl border border-purple-800/40 text-center mx-auto w-full max-w-md">
+                <div class="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-800/50 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
+                    <Icon name="ph:lock-key-bold" class="w-10 h-10 text-purple-400" />
+                </div>
+                <h3 class="font-orbitron font-bold text-lg text-purple-100 mb-2">Akun ini Privat</h3>
+                <p class="text-xs text-purple-300 font-mono leading-relaxed">
+                    Ikuti akun ini untuk melihat foto dan videonya.
+                </p>
             </div>
-
-            <!-- Tweet Tabs-->
-            <ProfileTwitsTab @toggleTabs="toggleTabs" :isYappinganActive="isYappinganActive"
-                :isLikedActive="isLikedActive" :isRepostedActive="isRepostedActive" />
-
-            <Twits :id="userId" :type="isYappinganActive ? 'yappingan' : isLikedActive ? 'liked' : 'reposted'" />
         </div>
     </main>
 </template>

@@ -32,7 +32,12 @@ export default defineEventHandler(async (event) => {
 
         // Jika user belum login, asumsikan belum ada yang difollow
         if (!currentUser) {
-            return { ...userDb, isFollowed: false };
+            return { 
+                user: userDb, 
+                tweets: userDb.isPrivate ? [] : (userTweets || []), 
+                isFollowed: false,
+                followStatus: null
+            };
         }
 
         // 2. Ambil ID twit
@@ -45,12 +50,20 @@ export default defineEventHandler(async (event) => {
         }).lean();
 
         // 4. Cek apakah user sudah follow user tersebut
-        const isFollowed = userFollow !== null;
+        const isFollowed = userFollow && (!userFollow.status || userFollow.status === 'accepted');
+        const followStatus = userFollow?.status || null;
+
+        // 5. Proteksi konten jika akun privat
+        let tweets = userTweets || [];
+        if (userDb.isPrivate && currentUser.id !== userDb._id.toString() && !isFollowed) {
+            tweets = [];
+        }
 
         return {
             user: userDb,
-            tweets: userTweets ? userTweets : [],
-            isFollowed: isFollowed
+            tweets: tweets,
+            isFollowed: isFollowed,
+            followStatus: followStatus
         };
 
     } catch (error: any) {
