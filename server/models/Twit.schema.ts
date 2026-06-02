@@ -21,7 +21,7 @@ const twitSchema = new Schema({
     repostCount: { type: Number, default: 0 },
     /** Nested object to handle replies or quotes */
     SubTwit: {
-        isSubTwit: { type: Boolean },
+        isSubTwit: { type: Boolean, default: false },
         /** The parent Twit being replied to or quoted */
         reference: { type: Schema.Types.ObjectId, ref: 'Twit', default: null }
     },
