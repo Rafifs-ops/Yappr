@@ -29,6 +29,7 @@ onMounted(async () => {
     }
 })
 
+// Membuat room chat baru
 const createChat = async (userId) => {
     try {
         const res = await $csrfFetch('/api/chat', {

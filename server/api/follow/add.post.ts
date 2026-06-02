@@ -32,8 +32,8 @@ export default defineEventHandler(async (event) => {
                     message: 'mulai mengikuti Anda'
                 });
 
-                await User.findByIdAndUpdate(follower, { $inc: { following: 1 } });
-                await User.findByIdAndUpdate(following, { $inc: { followers: 1 } });
+                await User.findByIdAndUpdate(follower, { $inc: { following: 1 } }); // Yang ngefollow, followingnya nambah 1
+                await User.findByIdAndUpdate(following, { $inc: { followers: 1 } }); // Yang difollow, followersnya nambah 1
             }
         }
 

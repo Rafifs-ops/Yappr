@@ -2,16 +2,17 @@ import { Twit } from "../../models/Twit.schema";
 import { Like } from "../../models/Like.schema";
 import { Repost } from "../../models/Repost.schema";
 import { session } from "../../utils/session";
+import { Follow } from "../../models/Follow.schema";
 
 export default defineEventHandler(async (event) => {
     try {
         const id = getRouterParam(event, 'id');
         // 1. Ambil twit
         const twit = await Twit.findById(id)
-            .populate('user', 'username photo')
+            .populate('user', 'username photo isPrivate')
             .populate({
                 path: 'SubTwit.reference',
-                populate: { path: 'user', select: 'username photo' }
+                populate: { path: 'user', select: 'username photo isPrivate' }
             })
             .lean();
 
@@ -24,6 +25,25 @@ export default defineEventHandler(async (event) => {
             currentUser = await session(event);
         } catch (e) {
             // Abaikan jika user belum login
+        }
+
+        const author = (twit as any).user;
+        if (author?.isPrivate) {
+            let canView = false;
+            if (currentUser && author._id.toString() === currentUser.id) {
+                canView = true;
+            } else if (currentUser) {
+                const isFollowing = await Follow.findOne({
+                    follower: currentUser.id,
+                    following: author._id,
+                    $or: [{ status: 'accepted' }, { status: { $exists: false } }]
+                }).lean();
+                if (isFollowing) canView = true;
+            }
+            
+            if (!canView) {
+                throw createError({ statusCode: 403, statusMessage: 'Akun ini di-private' });
+            }
         }
 
         // Jika user belum login, asumsikan belum ada yang dilike dan direpost

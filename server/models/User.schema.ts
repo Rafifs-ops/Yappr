@@ -6,7 +6,7 @@ const userSchema = new Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     bio: { type: String, required: true },
-    emailVerifiedAt: { type: Date, default: null },
+    emailVerifiedAt: { type: Date, default: null }, // Jika masih null, maka belum terverifikasi
     followers: { type: Number, default: 0 },
     following: { type: Number, default: 0 },
     isPrivate: { type: Boolean, default: false }

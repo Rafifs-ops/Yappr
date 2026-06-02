@@ -1,5 +1,7 @@
 import { Message } from '../models/Message.schema';
 
+// Peer adalah pihak yang terhubung ke websocket
+
 export default defineWebSocketHandler({
     open(peer) {
         console.log('[WS] Koneksi baru:', peer.id);
@@ -33,7 +35,6 @@ export default defineWebSocketHandler({
                     message: newMessage
                 }));
 
-                // Kirim balik ke pengirim karena peer.publish tidak mengirim ke sender
                 peer.send(JSON.stringify({
                     type: 'new_message',
                     message: newMessage

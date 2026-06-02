@@ -2,15 +2,16 @@ import { Twit } from "../../../models/Twit.schema";
 import { Like } from "../../../models/Like.schema";
 import { Repost } from "../../../models/Repost.schema";
 import { session } from "../../../utils/session";
+import { Follow } from "../../../models/Follow.schema";
 
 export default defineEventHandler(async (event) => {
     try {
         // 1. Ambil twits
         const twits = await Twit.find({
             hashtags: event.context?.params?.hashtag?.toLowerCase()
-        }).sort({ createdAt: -1 }).populate('user', 'username photo').populate({
+        }).sort({ createdAt: -1 }).populate('user', 'username photo isPrivate').populate({
             path: 'SubTwit.reference',
-            populate: { path: 'user', select: 'username photo' }
+            populate: { path: 'user', select: 'username photo isPrivate' }
         }).lean();
 
         let currentUser = null;
@@ -20,13 +21,30 @@ export default defineEventHandler(async (event) => {
             // Ignore if not logged in
         }
 
+        let followingIds: string[] = [];
+        if (currentUser) {
+            const following = await Follow.find({
+                follower: currentUser.id,
+                $or: [{ status: 'accepted' }, { status: { $exists: false } }]
+            }).lean();
+            followingIds = following.map(f => f.following.toString());
+        }
+
+        const filteredTwits = twits.filter((twit: any) => {
+            const author = twit.user;
+            if (!author?.isPrivate) return true;
+            if (currentUser && author._id.toString() === currentUser.id) return true;
+            if (followingIds.includes(author._id.toString())) return true;
+            return false;
+        });
+
         // Jika user belum login, asumsikan belum ada yang dilike dan direpost
         if (!currentUser) {
-            return twits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
+            return filteredTwits.map((twit: any) => ({ ...twit, isLiked: false, isReposted: false }));
         }
 
         // Ambil semua ID twit dari hasil query pertama
-        const twitIds = twits.map(t => t._id);
+        const twitIds = filteredTwits.map((t: any) => t._id);
 
         // Cari semua twit yang di like dan di repost oleh user
         const userLikes = await Like.find({
@@ -43,7 +61,7 @@ export default defineEventHandler(async (event) => {
         const repostedTwitIds = new Set(userReposts.map(repost => repost.twit.toString()));
 
         // Petakan status isLiked dan isReposted ke masing-masing twit
-        const twitsWithLikeStatus = twits.map(twit => {
+        const twitsWithLikeStatus = filteredTwits.map((twit: any) => {
             return {
                 ...twit,
                 isLiked: likedTwitIds.has(twit._id.toString()),
