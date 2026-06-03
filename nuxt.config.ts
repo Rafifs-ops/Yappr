@@ -7,7 +7,8 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
-    'nuxt-security'
+    'nuxt-security',
+    'dragon-editor'
   ],
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

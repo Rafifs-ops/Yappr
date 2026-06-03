@@ -86,7 +86,11 @@ async function handlePost() {
         return;
     }
 
-    const { finalText, hashtags } = extractAndCleanHashtags(content.value);
+    let { finalText, hashtags } = extractAndCleanHashtags(content.value);
+
+    if (finalText === '<p></p>' || finalText === '<p><br></p>') {
+        finalText = '';
+    }
 
     try {
         isUploading.value = true;
@@ -136,7 +140,7 @@ async function handlePost() {
                 <div class="flex flex-col space-y-4">
                     <div class="rounded-xl overflow-hidden border border-purple-800/50/50 shadow-inner">
                         <ClientOnly>
-                            <TiptapEditor v-model="content" />
+                            <DragonEditor v-model="content" />
                         </ClientOnly>
                     </div>
 

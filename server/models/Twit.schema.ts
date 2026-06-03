@@ -9,7 +9,7 @@ const twitSchema = new Schema({
     /** Reference to the User who created the twit */
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     /** Main content of the twit. Can include HTML from the rich text editor */
-    text: { type: String, required: true, maxlength: 280 },
+    text: { type: String, required: true },
     /** Optional image attachment as a URL or base64 string */
     image: { type: String },
     video: { type: String },

@@ -16,8 +16,16 @@ export default defineEventHandler(async (event) => {
         const user = await session(event);
         const { twitId, text, image, video, hashtags } = body;
 
-        if (!text || !user) {
-            throw createError({ statusCode: 400, statusMessage: 'Text dan UserId wajib diisi' });
+        const isTextEmpty = !text || text.trim() === '' || text === '<p></p>' || text === '<p><br></p>';
+
+        // Tolak jika semua elemen (teks, gambar, video) kosong
+        if (isTextEmpty && !image && !video) {
+            throw createError({ statusCode: 400, statusMessage: 'Teks, gambar, atau video wajib diisi' });
+        }
+
+        // Cek autentikasi user
+        if (!user) {
+            throw createError({ statusCode: 401, statusMessage: 'Akses ditolak. User tidak valid.' });
         }
 
         let imageUrl = '';
