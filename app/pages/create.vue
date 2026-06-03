@@ -1,21 +1,7 @@
 <script setup>
-import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
 const { $csrfFetch } = useNuxtApp();
 
 const content = ref('')
-// Konfigurasi quill editor
-const editorOptions = {
-    modules: {
-        toolbar: [
-            [{ header: [1, 2, 3, false] }], // Pilihan ukuran judul
-            ['bold', 'italic', 'underline', 'strike'], // Format teks
-            [{ list: 'ordered' }, { list: 'bullet' }], // List/Daftar
-            ['link'], // Link
-            ['clean'] // Tombol hapus semua format
-        ]
-    }
-}
 
 definePageMeta({
     layout: 'default'
@@ -150,8 +136,7 @@ async function handlePost() {
                 <div class="flex flex-col space-y-4">
                     <div class="rounded-xl overflow-hidden border border-purple-800/50/50 shadow-inner">
                         <ClientOnly>
-                            <QuillEditor v-model:content="content" content-type="html" theme="snow"
-                                :options="editorOptions" />
+                            <QuillEditor v-model="content" />
                         </ClientOnly>
                     </div>
 
@@ -204,34 +189,5 @@ async function handlePost() {
 <style scoped>
 textarea::placeholder {
     font-size: 1.1rem;
-}
-
-/* 1. Mengatur tinggi minimum dan tinggi maksimal area ketik */
-:deep(.ql-editor) {
-    min-height: 250px;
-    max-height: 500px;
-    overflow-y: auto;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #f8fafc;
-    background-color: transparent;
-}
-
-/* 2. Mengatur styling Toolbar (Kotak peralatan di atas) */
-:deep(.ql-toolbar.ql-snow) {
-    border: 1px solid rgba(147, 51, 234, 0.25);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    background-color: transparent;
-}
-
-/* 3. Mengatur area tempat mengetik */
-:deep(.ql-container.ql-snow) {
-    border: 1px solid rgba(147, 51, 234, 0.25);
-    border-top: none;
-    /* Agar menyatu dengan toolbar */
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    background-color: transparent;
 }
 </style>
