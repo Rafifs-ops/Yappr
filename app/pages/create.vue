@@ -77,8 +77,8 @@ function removeVideo() {
 }
 
 async function handlePost() {
-    // Mengecek apakah content kosong, null, atau hanya berisi tag kosong bawaan Quill
-    const isContentEmpty = !content.value || content.value === '<p><br></p>';
+    // Mengecek apakah content kosong, null, atau hanya berisi tag kosong
+    const isContentEmpty = !content.value || content.value.trim() === '' || content.value === '<p><br></p>' || content.value === '<p></p>';
 
     // PERBAIKAN: Mengganti text.value menjadi isContentEmpty
     if (isContentEmpty && !imageFile.value && !videoFile.value) {
@@ -136,7 +136,7 @@ async function handlePost() {
                 <div class="flex flex-col space-y-4">
                     <div class="rounded-xl overflow-hidden border border-purple-800/50/50 shadow-inner">
                         <ClientOnly>
-                            <QuillEditor v-model="content" />
+                            <TiptapEditor v-model="content" />
                         </ClientOnly>
                     </div>
 

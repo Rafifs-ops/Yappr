@@ -13,12 +13,13 @@
             </div>
         </div>
 
-        <div ref="editorContainer" :class="{ 'opacity-0': isLoading, 'transition-opacity duration-300': true }"></div>
+        <div :class="{ 'opacity-0': isLoading, 'transition-opacity duration-300': true }">
+            <div ref="editorContainer"></div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 
@@ -26,6 +27,9 @@ const content = defineModel({ type: String, default: '' })
 const editorContainer = ref(null)
 const isLoading = ref(true)
 let quill = null
+
+// Flag untuk mencegah infinite loop atau format yang tersetting ulang
+let isLocalUpdate = false
 
 onMounted(() => {
     quill = new Quill(editorContainer.value, {
@@ -46,12 +50,17 @@ onMounted(() => {
         quill.clipboard.dangerouslyPasteHTML(content.value)
     }
 
-    // PERBAIKAN 1: Tambahkan parameter (delta, oldDelta, source)
     quill.on('text-change', (delta, oldDelta, source) => {
-        // Hanya kirim update ke v-model JIKA perubahan dilakukan langsung oleh user (ketikan/klik)
         if (source === 'user') {
+            isLocalUpdate = true // Tandai bahwa perubahan ini dari aktivitas user
+
             const html = quill.root.innerHTML
             content.value = html === '<p><br></p>' ? '' : html
+
+            // Kembalikan flag setelah v-model Vue selesai ter-update
+            nextTick(() => {
+                isLocalUpdate = false
+            })
         }
     })
 
@@ -61,10 +70,15 @@ onMounted(() => {
 })
 
 watch(content, (newValue) => {
-    // PERBAIKAN 2: Jangan menimpa konten saat pengguna sedang fokus mengetik di dalam editor
-    // Ini yang menyebabkan format hilang dan tombol toolbar tidak aktif!
-    if (quill && newValue !== quill.root.innerHTML && !quill.hasFocus()) {
-        quill.clipboard.dangerouslyPasteHTML(newValue || '')
+    // JANGAN lakukan apa-apa jika perubahan berasal dari ketikan internal
+    if (isLocalUpdate || !quill) return
+
+    const currentHtml = quill.root.innerHTML === '<p><br></p>' ? '' : quill.root.innerHTML
+    const newHtml = newValue || ''
+
+    // Hanya paste ulang jika konten benar-benar berubah dari komponen luar (Parent)
+    if (currentHtml !== newHtml) {
+        quill.clipboard.dangerouslyPasteHTML(newHtml)
     }
 })
 
@@ -140,18 +154,43 @@ onBeforeUnmount(() => {
 
 /* --- PERBAIKAN WARNA TOMBOL TOOLBAR AKTIF (HEADING DLL) --- */
 /* Agar menu dropdown Heading juga bisa menyala ungu saat aktif/di-hover */
-:deep(.ql-snow .ql-toolbar .ql-picker-label.ql-active),
-:deep(.ql-snow .ql-toolbar .ql-picker-label:hover) {
+:deep(.ql-toolbar.ql-snow .ql-picker-label.ql-active),
+:deep(.ql-toolbar.ql-snow .ql-picker-label:hover) {
     color: #c084fc !important;
 }
 
-:deep(.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke),
-:deep(.ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke) {
+:deep(.ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke),
+:deep(.ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke) {
     stroke: #c084fc !important;
 }
 
-:deep(.ql-snow .ql-toolbar .ql-picker-item.ql-selected),
-:deep(.ql-snow .ql-toolbar .ql-picker-item:hover) {
+:deep(.ql-toolbar.ql-snow .ql-picker-item.ql-selected),
+:deep(.ql-toolbar.ql-snow .ql-picker-item:hover) {
     color: #c084fc !important;
+}
+
+/* Perbaiki Dropdown Heading yang Blur/Tidak Terlihat di Dark Theme */
+:deep(.ql-toolbar.ql-snow .ql-picker-options) {
+    background-color: #1a0b2e !important;
+    border: 1px solid rgba(192, 132, 252, 0.3) !important;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+:deep(.ql-toolbar.ql-snow .ql-picker-item) {
+    color: #cbd5e1 !important;
+    /* warna text terang agar kontras dengan bg gelap */
+}
+
+/* --- PERBAIKAN WARNA TOMBOL TOOLBAR STANDAR (BOLD, ITALIC DLL) --- */
+:deep(.ql-toolbar.ql-snow button.ql-active .ql-stroke),
+:deep(.ql-toolbar.ql-snow button:hover .ql-stroke) {
+    stroke: #c084fc !important;
+    /* Warna ungu Yappr Anda */
+}
+
+:deep(.ql-toolbar.ql-snow button.ql-active .ql-fill),
+:deep(.ql-toolbar.ql-snow button:hover .ql-fill) {
+    fill: #c084fc !important;
 }
 </style>

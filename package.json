@@ -1,5 +1,5 @@
 {
-  "name": "RTwit",
+  "name": "Yappr",
   "type": "module",
   "private": true,
   "scripts": {
@@ -14,6 +14,13 @@
     "@nuxtjs/cloudinary": "^4.0.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@pinia/nuxt": "^0.11.3",
+    "@tiptap/extension-color": "^3.25.0",
+    "@tiptap/extension-link": "^3.25.0",
+    "@tiptap/extension-text-align": "^3.25.0",
+    "@tiptap/extension-text-style": "^3.25.0",
+    "@tiptap/pm": "^3.25.0",
+    "@tiptap/starter-kit": "^3.25.0",
+    "@tiptap/vue-3": "^3.25.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "jsonwebtoken": "^9.0.3",
