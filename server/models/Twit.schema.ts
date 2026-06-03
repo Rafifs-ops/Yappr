@@ -8,8 +8,8 @@ import { Schema, model } from 'mongoose';
 const twitSchema = new Schema({
     /** Reference to the User who created the twit */
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    /** Main content of the twit. Can include HTML from the rich text editor */
-    text: { type: String, required: true },
+    /** Main content of the twit. From WYSIWYG Dragon Editor*/
+    text: [],
     /** Optional image attachment as a URL or base64 string */
     image: { type: String },
     video: { type: String },

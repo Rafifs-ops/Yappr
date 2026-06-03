@@ -170,7 +170,11 @@ async function deleteTwit(twitId) {
                 </div>
 
                 <!-- Twit Body Content -->
-                <div class="text-white text-sm mt-1 twit-content leading-relaxed" v-html="twit.text"></div>
+                <div class="text-white text-sm mt-1 twit-content leading-relaxed">
+                    <ClientOnly>
+                        <DragonEditorViewer :content="twit.text" />
+                    </ClientOnly>
+                </div>
 
                 <div v-if="twit.hashtags?.length" class="flex flex-wrap gap-2 mt-2">
                     <NuxtLink v-for="(hashtag, idx) in twit.hashtags" :key="idx" :to="`/twits/${hashtag}`"

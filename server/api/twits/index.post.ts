@@ -16,11 +16,9 @@ export default defineEventHandler(async (event) => {
         const user = await session(event);
         const { twitId, text, image, video, hashtags } = body;
 
-        const isTextEmpty = !text || text.trim() === '' || text === '<p></p>' || text === '<p><br></p>';
-
-        // Tolak jika semua elemen (teks, gambar, video) kosong
-        if (isTextEmpty && !image && !video) {
-            throw createError({ statusCode: 400, statusMessage: 'Teks, gambar, atau video wajib diisi' });
+        // Tolak jika teks kosong
+        if (text.length === 0) {
+            throw createError({ statusCode: 400, statusMessage: 'Teks wajib diisi' });
         }
 
         // Cek autentikasi user

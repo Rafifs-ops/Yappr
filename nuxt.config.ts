@@ -38,7 +38,6 @@ export default defineNuxtConfig({
     },
   },
   css: [
-    'quill/dist/quill.snow.css', // Pastikan CSS ini dimuat global
     '~/assets/css/main.css'
   ],
   nitro: {

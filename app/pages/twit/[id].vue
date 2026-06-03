@@ -27,7 +27,7 @@ watch(fetchedData, (newData) => {
     }
 }, { immediate: true });
 
-const newComment = ref('');
+const newComment = ref([]);
 const isSubmitting = ref(false);
 const submitComment = async () => {
     if (!newComment.value.trim()) return;
@@ -203,9 +203,7 @@ const deleteComment = async (commentId) => {
 
             <!--Form Kirim Komentar-->
             <div class="flex flex-col gap-2.5 mt-4 pt-2 border-t border-purple-800/40">
-                <textarea v-model="newComment" placeholder="Kirim Balasan..."
-                    class="w-full rounded-xl bg-[#1a0b2e]/80 backdrop-blur-md border border-purple-800/50 p-3 text-white placeholder-purple-400/70 focus:outline-none focus:border-purple-400 focus:shadow-[0_0_12px_rgba(2,132,199,0.12)] transition duration-300 text-sm resize-none"
-                    rows="2"></textarea>
+                <DragonEditor v-model="newComment" :useMenuBar="false" />
                 <button @click="submitComment" :disabled="isSubmitting"
                     class="btn-neon-purple font-orbitron font-bold py-2.5 px-6 rounded-xl transition duration-300 shadow-lg tracking-widest text-[10px] self-end w-32 disabled:opacity-50">
                     {{ isSubmitting ? 'MENGIRIM...' : 'KIRIM' }}
@@ -238,7 +236,10 @@ const deleteComment = async (commentId) => {
                             <Icon name="streamline-ultimate:bin-1-bold" class="w-3.5 h-3.5" />
                         </button>
                     </div>
-                    <p class="text-purple-100 text-xs leading-relaxed font-mono pl-1">{{ comment.text }}</p>
+
+                    <ClientOnly>
+                        <DragonEditorViewer :content="comment.text" />
+                    </ClientOnly>
 
                     <div class="mt-4 flex justify-between border-t border-purple-800/40 pt-2">
                         <button @click="toggleLike(comment._id)"

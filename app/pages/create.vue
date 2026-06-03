@@ -1,11 +1,12 @@
 <script setup>
 const { $csrfFetch } = useNuxtApp();
 
-const content = ref('')
+const content = ref([]);
 
 definePageMeta({
     layout: 'default'
 })
+
 const imageFile = ref(null);
 const imagePreview = ref('');
 const videoFile = ref(null);
@@ -77,29 +78,21 @@ function removeVideo() {
 }
 
 async function handlePost() {
-    // Mengecek apakah content kosong, null, atau hanya berisi tag kosong
-    const isContentEmpty = !content.value || content.value.trim() === '' || content.value === '<p><br></p>' || content.value === '<p></p>';
-
-    // PERBAIKAN: Mengganti text.value menjadi isContentEmpty
-    if (isContentEmpty && !imageFile.value && !videoFile.value) {
+    if (content.value.length === 0) {
         alert('Tolong masukkan teks, pilih gambar, atau pilih video.');
         return;
     }
 
-    let { finalText, hashtags } = extractAndCleanHashtags(content.value);
-
-    if (finalText === '<p></p>' || finalText === '<p><br></p>') {
-        finalText = '';
-    }
+    const hashtags = ['#test'];
 
     try {
         isUploading.value = true;
         await $csrfFetch('/api/twits', {
             method: 'POST',
             body: {
-                text: finalText,
-                image: imagePreview.value, // This is the base64 string
-                video: videoPreview.value,
+                text: content.value,
+                image: imagePreview.value !== '' ? imagePreview.value : null, // This is the base64 string
+                video: videoPreview.value !== '' ? videoPreview.value : null,
                 hashtags: hashtags,
             }
         });
