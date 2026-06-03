@@ -1,6 +1,6 @@
 import { User } from '../../models/User.schema';
 import { Twit } from '../../models/Twit.schema';
-import { Follow } from '~~/server/models/Follow.schema';
+import { Follow } from '../../models/Follow.schema';
 import { session } from "../../utils/session";
 
 
@@ -32,28 +32,28 @@ export default defineEventHandler(async (event) => {
 
         // Jika user belum login, asumsikan belum ada yang difollow
         if (!currentUser) {
-            return { 
-                user: userDb, 
-                tweets: userDb.isPrivate ? [] : (userTweets || []), 
+            return {
+                user: userDb,
+                tweets: userDb.isPrivate ? [] : (userTweets || []),
                 isFollowed: false,
                 followStatus: null
             };
         }
 
-        // 2. Ambil ID twit
+        // Ambil ID twit
         const userId = userDb._id;
 
-        // 3. Cari Follow milik user INI yang berkaitan dengan twit ini
+        // Cari Follow milik user INI yang berkaitan dengan twit ini
         const userFollow = await Follow.findOne({
             follower: currentUser.id,
             following: userId
         }).lean();
 
-        // 4. Cek apakah user sudah follow user tersebut
+        // Cek apakah user sudah follow user tersebut
         const isFollowed = userFollow && (!userFollow.status || userFollow.status === 'accepted');
         const followStatus = userFollow?.status || null;
 
-        // 5. Proteksi konten jika akun privat
+        // Proteksi konten jika akun privat
         let tweets = userTweets || [];
         if (userDb.isPrivate && currentUser.id !== userDb._id.toString() && !isFollowed) {
             tweets = [];

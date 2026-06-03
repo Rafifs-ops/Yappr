@@ -132,6 +132,8 @@ Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan ra
 5. Setelah itu, server akan memperbarui data(doc) User di database berdasarkan userId milik klien. Field yang diperbarui meliputi teks biodata dan nama file foto profil yang baru (jika user mengganti fotonya).
 6. Jika proses update ke database berhasil, server akan mengembalikan response sukses. Frontend kemudian akan mengarahkan (redirect) user kembali ke halaman profil utamanya, baik itu `app/pages/profile/index.vue` atau `app/pages/profile/[id].vue`, dan data profil yang tampil sudah merupakan data yang paling baru.
 
+---
+
 ## ERD
 
 ![gambar-erd](https://res.cloudinary.com/dzj9avwsg/image/upload/v1780419179/erd-yappr-mongoDb_ymx4z2.png)

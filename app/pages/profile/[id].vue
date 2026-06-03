@@ -18,7 +18,7 @@ const followStats = ref({
     isFollowing: false,
     followStatus: null,
     followersCount: 0,
-    followingCount: 0
+    followingCount: 0,
 });
 
 // Sinkronisasi data initial setelah fetch
@@ -106,7 +106,6 @@ function toggleTabs(tab) {
 <template>
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
-            <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
             LOADING PROFILE...
         </div>
 
@@ -137,29 +136,18 @@ function toggleTabs(tab) {
                     {{ response?.user?.bio || 'No status log written.' }}
                 </p>
 
-                <!-- Holographic Stats grid -->
-                <div
-                    class="flex justify-center gap-8 w-full border-t border-b border-purple-800/40 py-3.5 my-3 font-mono">
-                    <div class="flex flex-col items-center">
-                        <span class="font-bold text-purple-600 text-lg tracking-wider">{{ followStats.followersCount
-                            }}</span>
-                        <span class="text-[9px] text-purple-300 tracking-widest mt-1">FOLLOWERS</span>
-                    </div>
-                    <div class="w-[1px] bg-slate-200"></div>
-                    <div class="flex flex-col items-center">
-                        <span class="font-bold text-purple-600 text-lg tracking-wider">{{ followStats.followingCount
-                            }}</span>
-                        <span class="text-[9px] text-purple-300 tracking-widest mt-1">FOLLOWING</span>
-                    </div>
-                </div>
+                <!-- Follow Stats -->
+                <FollowList :userId="userId" :followStats="followStats" />
 
                 <!-- Follow / Unfollow Action Button -->
                 <button v-if="auth.session?.id && auth.session.id !== userId" @click="toggleFollow"
                     :class="followStats.followStatus === 'pending' ? 'bg-purple-800/50 text-purple-300' : (followStats.isFollowing ? 'btn-neon-magenta' : 'btn-neon-purple')"
                     class="mt-2 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg flex items-center gap-1.5 transition-all">
-                    <Icon :name="followStats.followStatus === 'pending' ? 'ph:clock-bold' : (followStats.isFollowing ? 'ph:user-minus-bold' : 'ph:user-plus-bold')"
+                    <Icon
+                        :name="followStats.followStatus === 'pending' ? 'ph:clock-bold' : (followStats.isFollowing ? 'ph:user-minus-bold' : 'ph:user-plus-bold')"
                         class="w-4 h-4" />
-                    {{ followStats.followStatus === 'pending' ? 'REQUESTED' : (followStats.isFollowing ? 'UNFOLLOW' : 'FOLLOW') }}
+                    {{ followStats.followStatus === 'pending' ? 'REQUESTED' : (followStats.isFollowing ? 'UNFOLLOW' :
+                        'FOLLOW') }}
                 </button>
             </div>
 
@@ -178,9 +166,11 @@ function toggleTabs(tab) {
             </template>
 
             <!-- Private Account Lock UI -->
-            <div v-else class="flex flex-col items-center justify-center py-16 px-4 bg-[#1a0b2e]/60 backdrop-blur-sm rounded-3xl border border-purple-800/40 text-center mx-auto w-full max-w-md">
-                <div class="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-800/50 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
-                    <Icon name="ph:lock-key-bold" class="w-10 h-10 text-purple-400" />
+            <div v-else
+                class="flex flex-col items-center justify-center py-16 px-4 bg-[#1a0b2e]/60 backdrop-blur-sm rounded-3xl border border-purple-800/40 text-center mx-auto w-full max-w-md">
+                <div
+                    class="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-800/50 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
+                    <Icon name="streamline-ultimate:lock-shield-bold" class="w-10 h-10 text-purple-400" />
                 </div>
                 <h3 class="font-orbitron font-bold text-lg text-purple-100 mb-2">Akun ini Privat</h3>
                 <p class="text-xs text-purple-300 font-mono leading-relaxed">
