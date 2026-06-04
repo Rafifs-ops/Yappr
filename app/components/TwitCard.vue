@@ -63,9 +63,7 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
 
         <!-- Twit Body Content -->
         <div class="text-white text-sm mt-1 twit-content leading-relaxed">
-            <ClientOnly>
-                <DragonEditorViewer :content="twit.text" />
-            </ClientOnly>
+            <div v-html="twit.text"></div>
         </div>
 
         <div v-if="twit.hashtags?.length" class="flex flex-wrap gap-2 mt-2">

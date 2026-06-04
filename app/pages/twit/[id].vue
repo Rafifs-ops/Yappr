@@ -27,7 +27,7 @@ watch(fetchedData, (newData) => {
     }
 }, { immediate: true });
 
-const newComment = ref([]);
+const newComment = ref('');
 const isSubmitting = ref(false);
 const submitComment = async () => {
     if (!newComment.value.trim()) return;
@@ -203,7 +203,9 @@ const deleteComment = async (commentId) => {
 
             <!--Form Kirim Komentar-->
             <div class="flex flex-col gap-2.5 mt-4 pt-2 border-t border-purple-800/40">
-                <DragonEditor v-model="newComment" :useMenuBar="false" />
+                <ClientOnly>
+                    <TiptapEditor v-model="newComment" />
+                </ClientOnly>
                 <button @click="submitComment" :disabled="isSubmitting"
                     class="btn-neon-purple font-orbitron font-bold py-2.5 px-6 rounded-xl transition duration-300 shadow-lg tracking-widest text-[10px] self-end w-32 disabled:opacity-50">
                     {{ isSubmitting ? 'MENGIRIM...' : 'KIRIM' }}
@@ -237,9 +239,9 @@ const deleteComment = async (commentId) => {
                         </button>
                     </div>
 
-                    <ClientOnly>
-                        <DragonEditorViewer :content="comment.text" />
-                    </ClientOnly>
+                    <div class="twit-content">
+                        <div v-html="comment.text"></div>
+                    </div>
 
                     <div class="mt-4 flex justify-between border-t border-purple-800/40 pt-2">
                         <button @click="toggleLike(comment._id)"

@@ -1,7 +1,7 @@
 <script setup>
 const { $csrfFetch } = useNuxtApp();
 
-const content = ref([]);
+const content = ref('text editor');
 
 definePageMeta({
     layout: 'default'
@@ -78,22 +78,27 @@ function removeVideo() {
 }
 
 async function handlePost() {
-    if (content.value.length === 0) {
-        alert('Tolong masukkan teks, pilih gambar, atau pilih video.');
+    const regex = /#[a-zA-Z0-9_]+/g;
+    const hashtags = content.value.match(regex) || [];
+    const cleanHashtags = hashtags.map(tag => tag.replace("#", ""));
+    const finalText = content.value.replace(regex, '').replace(/\s+/g, " ").trim();
+
+    // Tiptap sering menghasilkan tag HTML kosong seperti <p></p> atau <p><br></p>
+    const plainText = content.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+    if (!plainText) {
+        alert('Tolong isi twit');
         return;
     }
-
-    const hashtags = ['#test'];
 
     try {
         isUploading.value = true;
         await $csrfFetch('/api/twits', {
             method: 'POST',
             body: {
-                text: content.value,
+                text: finalText,
                 image: imagePreview.value !== '' ? imagePreview.value : null, // This is the base64 string
                 video: videoPreview.value !== '' ? videoPreview.value : null,
-                hashtags: hashtags,
+                hashtags: cleanHashtags,
             }
         });
         navigateTo('/profile');
@@ -133,7 +138,7 @@ async function handlePost() {
                 <div class="flex flex-col space-y-4">
                     <div class="rounded-xl overflow-hidden border border-purple-800/50/50 shadow-inner">
                         <ClientOnly>
-                            <DragonEditor v-model="content" />
+                            <TiptapEditor v-model="content" />
                         </ClientOnly>
                     </div>
 
@@ -183,8 +188,4 @@ async function handlePost() {
     </main>
 </template>
 
-<style scoped>
-textarea::placeholder {
-    font-size: 1.1rem;
-}
-</style>
+<style scoped></style>

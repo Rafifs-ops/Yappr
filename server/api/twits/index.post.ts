@@ -16,9 +16,12 @@ export default defineEventHandler(async (event) => {
         const user = await session(event);
         const { twitId, text, image, video, hashtags } = body;
 
-        // Tolak jika teks kosong
-        if (text.length === 0) {
-            throw createError({ statusCode: 400, statusMessage: 'Teks wajib diisi' });
+        // Membersihkan tag HTML dari tiptap (seperti <p></p> atau <p><br></p>)
+        const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+
+        // Tolak jika teks kosong dan tidak ada media
+        if (!plainText) {
+            throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
         }
 
         // Cek autentikasi user
