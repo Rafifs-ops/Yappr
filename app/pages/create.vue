@@ -1,7 +1,7 @@
 <script setup>
 const { $csrfFetch } = useNuxtApp();
 
-const content = ref('text editor');
+const content = ref('');
 
 definePageMeta({
     layout: 'default'
@@ -136,11 +136,10 @@ async function handlePost() {
                 </div>
 
                 <div class="flex flex-col space-y-4">
-                    <div class="rounded-xl overflow-hidden border border-purple-800/50/50 shadow-inner">
-                        <ClientOnly>
-                            <TiptapEditor v-model="content" />
-                        </ClientOnly>
-                    </div>
+                    <ClientOnly>
+                        <TiptapEditor v-model="content" />
+                    </ClientOnly>
+
 
                     <!-- Image Preview Area -->
                     <div v-if="imagePreview"

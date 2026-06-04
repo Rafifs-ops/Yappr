@@ -24,7 +24,9 @@ export default defineEventHandler(async (event) => {
                 user: twit.user,
                 sender: user.id,
                 type: 'repost',
-                message: 'memposting ulang twit Anda'
+                message: 'memposting ulang twit Anda',
+                twitText: twit.text,
+                twitId: body.twitId,
             });
         }
 

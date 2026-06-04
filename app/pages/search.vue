@@ -4,9 +4,9 @@ definePageMeta({
 })
 
 useHead({
-    title: 'Cari Teman - RTwit',
+    title: 'Cari Teman - Yappr',
     meta: [
-        { name: 'description', content: 'Cari teman Anda di RTwit' }
+        { name: 'description', content: 'Cari teman Anda di Yappr' }
     ]
 })
 
@@ -77,7 +77,7 @@ const dataProfile = computed(() => {
                         class="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-900/20 text-purple-200 text-xs font-mono hover:bg-purple-800/50 hover:border-purple-400 transition-all cursor-pointer flex items-center gap-1">
                         <span class="text-purple-400">#</span>{{ item.hashtag }}
                         <span class="text-[9px] text-purple-500 ml-1 bg-purple-950 px-1.5 rounded-full">{{ item.count
-                        }}</span>
+                            }}</span>
                     </NuxtLink>
                 </div>
 

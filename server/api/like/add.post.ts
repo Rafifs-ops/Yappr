@@ -24,7 +24,9 @@ export default defineEventHandler(async (event) => {
                 user: twit.user,
                 sender: user.id,
                 type: 'like',
-                message: 'menyukai twit Anda'
+                message: 'menyukai twit Anda',
+                twitText: twit.text,
+                twitId: body.twitId,
             });
         }
 

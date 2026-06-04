@@ -126,11 +126,25 @@ const formatDate = (date) => {
                         <span class="font-bold text-purple-600">@{{ notif.sender?.username }}</span>
                         {{ notif.message }}
                     </p>
-                    
+
+                    <div v-if="notif.commentText && notif.type == 'comment'"
+                        class="text-xs text-purple-200 leading-relaxed font-mono mt-3" v-html="notif.commentText">
+                    </div>
+
+                    <p class="text-md font-bold text-purple-400 leading-relaxed font-mono mt-4">Yappingan</p>
+                    <div v-if="notif.type == 'repost' || notif.type == 'comment' || notif.type == 'like'"
+                        class="border-2 border-purple-800/50/50 rounded-lg p-2 mt-2">
+                        <NuxtLink :to="`/twit/${notif.twitId}`" class="block mt-2">
+                            <p class="text-xs text-purple-200 leading-relaxed font-mono" v-html="notif.twitText"></p>
+                        </NuxtLink>
+                    </div>
+
                     <!-- Action Buttons for Follow Request -->
                     <div v-if="notif.type === 'follow_request'" class="flex gap-2 mt-3">
-                        <button @click.stop="handleRequest(notif, 'accept')" class="px-4 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors shadow-[0_0_10px_rgba(236,72,153,0.3)]">TERIMA</button>
-                        <button @click.stop="handleRequest(notif, 'reject')" class="px-4 py-1.5 bg-purple-900/50 hover:bg-purple-800/50 text-purple-300 border border-purple-800/50 rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors">TOLAK</button>
+                        <button @click.stop="handleRequest(notif, 'accept')"
+                            class="px-4 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors shadow-[0_0_10px_rgba(236,72,153,0.3)]">TERIMA</button>
+                        <button @click.stop="handleRequest(notif, 'reject')"
+                            class="px-4 py-1.5 bg-purple-900/50 hover:bg-purple-800/50 text-purple-300 border border-purple-800/50 rounded-lg text-[10px] font-orbitron font-bold tracking-widest transition-colors">TOLAK</button>
                     </div>
                 </div>
             </div>

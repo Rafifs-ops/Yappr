@@ -1,4 +1,5 @@
 import { Twit } from '../../models/Twit.schema';
+import { Notification } from '../../models/Notification.schema'
 import { session } from '../../utils/session';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -74,6 +75,19 @@ export default defineEventHandler(async (event) => {
 
         if (twitId) {
             await Twit.findByIdAndUpdate(twitId, { $inc: { commentCount: 1 } });
+
+            const twit = await Twit.findById(twitId);
+            if (twit && twit.user.toString() !== user.id.toString()) {
+                await Notification.create({
+                    user: twit.user,
+                    sender: user.id,
+                    type: 'comment',
+                    message: 'mengomentari twit Anda',
+                    twitText: twit.text,
+                    twitId: body.twitId,
+                    commentText: text,
+                });
+            }
         }
 
         return { success: true, data: newTwit };

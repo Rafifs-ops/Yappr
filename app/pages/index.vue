@@ -1,8 +1,8 @@
 <script setup>
 useHead({
-    title: 'Beranda - RTwit',
+    title: 'Beranda - Yappr',
     meta: [
-        { name: 'description', content: 'Aplikasi sosial RTwit' }
+        { name: 'description', content: 'Yappr, Media Sosial' }
     ]
 })
 definePageMeta({
