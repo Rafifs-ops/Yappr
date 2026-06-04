@@ -9,7 +9,7 @@ const twitSchema = new Schema({
     /** Reference to the User who created the twit */
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     /** Main content of the twit. From WYSIWYG Dragon Editor*/
-    text: [],
+    text: { type: [Schema.Types.Mixed], default: [] },
     /** Optional image attachment as a URL or base64 string */
     image: { type: String },
     video: { type: String },
