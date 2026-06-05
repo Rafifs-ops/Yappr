@@ -1,4 +1,6 @@
 <script setup>
+import { formatDate } from '~/utils/formatDate';
+
 /**
  * A reusable component for displaying a single Twit, including its
  * content, media, and interactive action buttons.
@@ -39,7 +41,7 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
                     </h2>
                     <span
                         class="font-mono text-[9px] tracking-wider text-purple-300 bg-purple-900/30 border border-purple-800/50/50 px-2 py-0.5 rounded mt-1">
-                        {{ new Date(twit.createdAt).toLocaleString('id-ID', { hour12: false }) }}
+                        {{ formatDate(twit.createdAt) }}
                     </span>
                 </div>
             </NuxtLink>
@@ -105,7 +107,7 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
             <button @click="emit('toggleRepost', twit._id)"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono select-none transition-all duration-300"
                 :class="twit.isReposted
-                    ? 'text-purple-600 bg-purple-900/20 border-purple-700/50 shadow-[0_0_10px_rgba(2,132,199,0.08)]'
+                    ? 'text-purple-300 bg-blue-900 border-purple-700/50 shadow-[0_0_10px_rgba(2,132,199,0.08)]'
                     : 'text-purple-300 bg-purple-900/30 border-purple-800/40 hover:border-purple-400 hover:text-purple-600'">
                 <Icon name="streamline-ultimate:switch-account-1-bold" />
                 <span>{{ twit.repostCount }}</span>

@@ -1,7 +1,7 @@
 <script setup>
 import { useAuth } from '../../stores/Auth';
-
 const auth = useAuth();
+
 const { $csrfFetch } = useNuxtApp();
 definePageMeta({
     layout: 'default'
@@ -27,40 +27,8 @@ watch(fetchedData, (newData) => {
     }
 }, { immediate: true });
 
-const newComment = ref('');
-const isSubmitting = ref(false);
-const submitComment = async () => {
-    if (!newComment.value.trim()) return;
-
-    isSubmitting.value = true;
-
-    try {
-        await $csrfFetch('/api/twits', {
-            method: 'POST',
-            body: { twitId: twitId, text: newComment.value }
-        });
-
-        newComment.value = '';
-        await refresh(); // Memuat ulang daftar komentar
-    } catch (e) {
-        alert(e.statusMessage);
-        return
-    } finally {
-        isSubmitting.value = false;
-    }
-};
-
-async function toggleLike(twitId, isMainTwit = false) {
-    let targetTwit;
-    if (isMainTwit) {
-        targetTwit = data.value.response;
-    } else {
-        // Cari index twit yang diklik di dalam state lokal kita
-        const index = data.value.comments.findIndex(t => t._id === twitId);
-        if (index === -1) return;
-        targetTwit = data.value.comments[index];
-    }
-
+async function toggleLike() {
+    const targetTwit = data.value.response;
     const previousIsLiked = targetTwit.isLiked;
 
     // OPTIMISTIC UPDATE: Karena ini state lokal, UI akan LANGSUNG BERUBAH
@@ -96,18 +64,6 @@ const deleteMainTwit = async () => {
         navigateTo('/');
     } catch (e) {
         alert(e.statusMessage || 'Gagal menghapus twit');
-    }
-};
-
-const deleteComment = async (commentId) => {
-    try {
-        await $csrfFetch('/api/twits', {
-            method: 'DELETE',
-            body: { twitId: commentId }
-        });
-        await refresh();
-    } catch (e) {
-        alert(e.statusMessage || 'Gagal menghapus komentar');
     }
 };
 </script>
@@ -184,7 +140,7 @@ const deleteComment = async (commentId) => {
                 </div>
 
                 <div class="mt-5 flex justify-between items-center border-t border-purple-800/40 pt-3">
-                    <button @click="toggleLike(data.response._id, true)"
+                    <button @click="toggleLike()"
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono select-none transition-all duration-300"
                         :class="data.response.isLiked
                             ? 'text-rose-600 bg-rose-50 border-rose-200 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
@@ -201,68 +157,7 @@ const deleteComment = async (commentId) => {
                 </div>
             </div>
 
-            <!--Form Kirim Komentar-->
-            <div class="flex flex-col gap-2.5 mt-4 pt-2 border-t border-purple-800/40">
-                <ClientOnly>
-                    <TiptapEditor v-model="newComment" />
-                </ClientOnly>
-                <button @click="submitComment" :disabled="isSubmitting"
-                    class="btn-neon-purple font-orbitron font-bold py-2.5 px-6 rounded-xl transition duration-300 shadow-lg tracking-widest text-[10px] self-end w-32 disabled:opacity-50">
-                    {{ isSubmitting ? 'MENGIRIM...' : 'KIRIM' }}
-                </button>
-            </div>
-
-            <div class="border-b border-purple-800/50 pb-2 pt-4">
-                <span class="font-orbitron text-[10px] font-bold text-purple-300 tracking-widest">BALASAN</span>
-            </div>
-
-            <!--Comments List-->
-            <template v-if="data.comments && data.comments.length">
-                <div v-for="comment in data.comments" :key="comment._id"
-                    class="bg-purple-900/20/50 p-4 rounded-xl border border-purple-800/40 relative overflow-hidden group/comment">
-
-                    <div class="absolute top-0 right-0 w-12 h-[1px] bg-gradient-to-l from-violet-500/20 to-transparent">
-                    </div>
-
-                    <!--Header Comment-->
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex flex-col">
-                            <h2 class="font-bold text-purple-600 font-orbitron text-xs tracking-wide">@{{
-                                comment.user?.username }}</h2>
-                            <span class="font-mono text-[8px] text-purple-300 mt-1">
-                                {{ new Date(comment.createdAt).toLocaleString('id-ID', { hour12: false }) }}
-                            </span>
-                        </div>
-                        <button v-if="comment.user?._id === auth.session?.id" @click="deleteComment(comment._id)"
-                            class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1 rounded-lg bg-purple-900/30/50 border border-purple-800/50/50 transition-all">
-                            <Icon name="streamline-ultimate:bin-1-bold" class="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-
-                    <div class="twit-content">
-                        <div v-html="comment.text"></div>
-                    </div>
-
-                    <div class="mt-4 flex justify-between border-t border-purple-800/40 pt-2">
-                        <button @click="toggleLike(comment._id)"
-                            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-mono select-none transition-all duration-300"
-                            :class="comment.isLiked
-                                ? 'text-rose-600 bg-rose-50 border-rose-200 shadow-[0_0_8px_rgba(244,63,94,0.06)]'
-                                : 'text-slate-505 bg-purple-900/30 border-purple-800/40 hover:border-rose-400 hover:text-rose-600'">
-                            <Icon name="streamline-ultimate:like-bold" />
-                            <span>{{ comment.likesCount }}</span>
-                        </button>
-
-                        <NuxtLink :to="`/twit/${comment._id}`"
-                            class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-[10px] font-mono transition-all duration-300">
-                            <Icon name="streamline-ultimate:messages-bubble-square-typing-bold" />
-                            <span>{{ comment.commentCount || 0 }}</span>
-                        </NuxtLink>
-                    </div>
-                </div>
-            </template>
-            <p v-else class="text-purple-300 text-xs italic font-mono pl-1 py-4">Belum ada komentar...
-            </p>
+            <CommentsView :comments="data.comments" :twitId="twitId" />
         </div>
     </main>
 </template>

@@ -208,11 +208,9 @@ watch(profile, (newData) => {
                         <label class="font-orbitron text-[10px] text-purple-400 uppercase tracking-widest">
                             Akun Privat
                         </label>
-                        <div 
-                            @click="form.isPrivate = !form.isPrivate"
+                        <div @click="form.isPrivate = !form.isPrivate"
                             class="w-11 h-6 bg-purple-900/50 rounded-full border border-purple-800/50 flex items-center cursor-pointer transition-colors"
-                            :class="{'bg-fuchsia-600': form.isPrivate, 'opacity-50 cursor-not-allowed': pending}"
-                        >
+                            :class="{ 'bg-red-600': form.isPrivate, 'opacity-50 cursor-not-allowed': pending }">
                             <div class="bg-white w-4 h-4 rounded-full shadow-md transform transition-transform"
                                 :class="form.isPrivate ? 'translate-x-6' : 'translate-x-1'">
                             </div>

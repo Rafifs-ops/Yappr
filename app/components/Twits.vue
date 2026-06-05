@@ -7,7 +7,8 @@ import TwitCard from './TwitCard.vue';
 const auth = useAuth();
 const props = defineProps({
     id: String,
-    type: String
+    type: String,
+    hashtag: String
 });
 
 // Ambil data menggunakan useFetch
@@ -20,6 +21,9 @@ const { data: fetchedTwits, pending, error } = await useFetch(() => {
     }
     if (props.id) {
         return `/api/twits/user/${props.id}`;
+    }
+    if (props.hashtag) {
+        return `/api/twits/hashtag/${props.hashtag}`;
     }
     return `/api/twits`;
 });

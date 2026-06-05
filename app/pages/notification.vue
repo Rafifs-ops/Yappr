@@ -1,5 +1,7 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { getIcon, getIconColor } from '~/utils/notifIcon';
+import { formatDate } from '~/utils/formatDate';
 
 const { $csrfFetch } = useNuxtApp();
 const auth = useAuth();
@@ -19,30 +21,6 @@ const markAsRead = async (notification) => {
     refresh()
 }
 
-const getIcon = (type) => {
-    switch (type) {
-        case 'like': return 'streamline-ultimate:like-bold'
-        case 'comment': return 'streamline-ultimate:messages-bubble-square-typing-bold'
-        case 'reply': return 'streamline-ultimate:messages-people-person-bubble-circle-1-bold'
-        case 'follow': return 'streamline-ultimate:following-1-bold'
-        case 'follow_request': return 'ph:user-plus-bold'
-        case 'follow_accept': return 'ph:check-circle-bold'
-        default: return 'streamline-ultimate:alert-bell-notification-2-bold'
-    }
-}
-
-const getIconColor = (type) => {
-    switch (type) {
-        case 'like': return 'text-rose-500'
-        case 'comment': return 'text-sky-500'
-        case 'reply': return 'text-emerald-500'
-        case 'follow': return 'text-violet-500'
-        case 'follow_request': return 'text-amber-500'
-        case 'follow_accept': return 'text-emerald-400'
-        default: return 'text-purple-300'
-    }
-}
-
 const handleRequest = async (notif, action) => {
     try {
         await $csrfFetch(`/api/follow/${action}`, {
@@ -56,24 +34,6 @@ const handleRequest = async (notif, action) => {
     } catch (err) {
         alert(err.statusMessage || 'Gagal memproses permintaan');
     }
-}
-
-const formatDate = (date) => {
-    const now = new Date()
-    const diff = now - new Date(date)
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-
-    if (minutes < 1) return 'Baru saja'
-    if (minutes < 60) return `${minutes}m`
-    if (hours < 24) return `${hours}j`
-    if (days < 7) return `${days}h`
-
-    return new Date(date).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short'
-    })
 }
 </script>
 
@@ -134,9 +94,12 @@ const formatDate = (date) => {
                     <p class="text-md font-bold text-purple-400 leading-relaxed font-mono mt-4">Yappingan</p>
                     <div v-if="notif.type == 'repost' || notif.type == 'comment' || notif.type == 'like'"
                         class="border-2 border-purple-800/50/50 rounded-lg p-2 mt-2">
-                        <NuxtLink :to="`/twit/${notif.twitId}`" class="block mt-2">
-                            <p class="text-xs text-purple-200 leading-relaxed font-mono" v-html="notif.twitText"></p>
-                        </NuxtLink>
+                        <ClientOnly>
+                            <NuxtLink :to="`/twit/${notif.twitId}`" class="block mt-2">
+                                <p class="text-xs text-purple-200 leading-relaxed font-mono" v-html="notif.twitText">
+                                </p>
+                            </NuxtLink>
+                        </ClientOnly>
                     </div>
 
                     <!-- Action Buttons for Follow Request -->

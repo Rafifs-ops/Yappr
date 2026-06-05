@@ -9,6 +9,26 @@ const auth = useAuth();
 
 const { data: response, pending, error } = await useFetch(`/api/user/${auth.session?.id}`);
 
+// State lokal untuk Optimistic UI
+const followStats = ref({
+    isFollowing: false,
+    followStatus: null,
+    followersCount: 0,
+    followingCount: 0,
+});
+
+// Sinkronisasi data initial setelah fetch
+watchEffect(() => {
+    if (response.value) {
+        followStats.value = {
+            isFollowing: response.value.isFollowed,
+            followStatus: response.value.followStatus,
+            followersCount: response.value.user.followers,
+            followingCount: response.value.user.following
+        };
+    }
+});
+
 const isYappinganActive = ref(true);
 const isLikedActive = ref(false);
 const isRepostedActive = ref(false);
@@ -63,6 +83,8 @@ function toggleTabs(tab) {
                     class="text-sm text-purple-100 px-6 py-3 mt-3 leading-relaxed bg-purple-900/20/80 border border-purple-800/50/50 rounded-2xl max-w-sm">
                     {{ response?.user?.bio || 'No status log written.' }}
                 </p>
+
+                <FollowList :userId="auth.session?.id" :followStats="followStats" />
 
                 <div class="flex space-x-2">
                     <button @click="auth.signOut"
