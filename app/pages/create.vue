@@ -23,56 +23,44 @@ function onFileChange(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-
     // Cek apakah file adalah video atau gambar
     if (file.type.startsWith('image/')) {
         imageFile.value = file;
-        reader.onload = (event) => { imagePreview.value = event.target.result; };
+        // Gunakan createObjectURL untuk preview yang lebih ringan dari Base64
+        imagePreview.value = URL.createObjectURL(file);
     } else if (file.type.startsWith('video/')) {
-        // Cek durasi video sebelum diproses
         const videoElement = document.createElement('video');
         videoElement.preload = 'metadata';
 
         videoElement.onloadedmetadata = function () {
-            window.URL.revokeObjectURL(videoElement.src); // Bersihkan memori
-
             // Cek jika durasi lebih dari 60 detik
             if (videoElement.duration > 60) {
                 alert('Durasi video terlalu panjang! Maksimal 1 menit (60 detik).');
-                // Reset input file
                 if (fileInput.value) fileInput.value.value = '';
+                URL.revokeObjectURL(videoElement.src);
                 return;
             }
 
-            // Jika lolos validasi, proses video
             videoFile.value = file;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                videoPreview.value = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            videoPreview.value = URL.createObjectURL(file); // Preview ringan
         }
-
-        // Memuat file sementara untuk membaca metadata
         videoElement.src = URL.createObjectURL(file);
     } else {
         alert('Tolong pilih file gambar atau video');
         return;
     }
-
-    reader.readAsDataURL(file);
 }
 
 function removeImage() {
     imageFile.value = null;
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value); // Bersihkan memori
     imagePreview.value = '';
-    // Kosongkan input file agar bisa memilih file yang sama lagi jika perlu
     if (fileInput.value) fileInput.value.value = '';
 }
 
 function removeVideo() {
     videoFile.value = null;
+    if (videoPreview.value) URL.revokeObjectURL(videoPreview.value); // Bersihkan memori
     videoPreview.value = '';
     if (fileInput.value) fileInput.value.value = '';
 }
@@ -83,7 +71,6 @@ async function handlePost() {
     const cleanHashtags = hashtags.map(tag => tag.replace("#", ""));
     const finalText = content.value.replace(regex, '').replace(/\s+/g, " ").trim();
 
-    // Tiptap sering menghasilkan tag HTML kosong seperti <p></p> atau <p><br></p>
     const plainText = content.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
     if (!plainText) {
         alert('Tolong isi twit');
@@ -92,15 +79,27 @@ async function handlePost() {
 
     try {
         isUploading.value = true;
+
+        // Beralih menggunakan FormData
+        const formData = new FormData();
+        formData.append('text', finalText);
+        formData.append('hashtags', JSON.stringify(cleanHashtags));
+
+        // Append file asli (bukan string base64) jika ada
+        if (imageFile.value) {
+            formData.append('image', imageFile.value);
+        }
+        if (videoFile.value) {
+            formData.append('video', videoFile.value);
+        }
+
+        // $fetch (atau $csrfFetch) di Nuxt otomatis mendeteksi FormData 
+        // dan akan mengatur headers 'Content-Type': 'multipart/form-data' dengan sendirinya
         await $csrfFetch('/api/twits', {
             method: 'POST',
-            body: {
-                text: finalText,
-                image: imagePreview.value !== '' ? imagePreview.value : null, // This is the base64 string
-                video: videoPreview.value !== '' ? videoPreview.value : null,
-                hashtags: cleanHashtags,
-            }
+            body: formData
         });
+
         navigateTo('/profile');
     } catch (err) {
         alert(err.statusMessage || 'An error occurred');

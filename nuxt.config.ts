@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
     'nuxt-security',
-    'dragon-editor'
   ],
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -18,12 +17,12 @@ export default defineNuxtConfig({
   },
   security: {
     requestSizeLimiter: {
-      maxRequestSizeInBytes: 104857600, // 100MB untuk mengakomodasi upload video base64
-      maxUploadFileRequestInBytes: 104857600,
+      maxRequestSizeInBytes: 200000000, // 200MB
+      maxUploadFileRequestInBytes: 200000000,
     },
     rateLimiter: {
-      tokensPerInterval: 50, // Jumlah request maksimal
-      interval: 'hour',      // Jangka waktu (ms, 'second', 'minute', 'hour', 'day')
+      tokensPerInterval: 300, // Jumlah request maksimal
+      interval: 'minute',      // Jangka waktu (ms, 'second', 'minute', 'hour', 'day')
     },
     csrf: true, // Mengaktifkan perlindungan CSRF
     headers: {
