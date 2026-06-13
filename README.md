@@ -136,4 +136,4 @@ Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan ra
 
 ## ERD
 
-![gambar-erd](https://res.cloudinary.com/dzj9avwsg/image/upload/v1780419179/erd-yappr-mongoDb_ymx4z2.png)
+![gambar-erd](https://res.cloudinary.com/dzj9avwsg/image/upload/v1781370962/Cuplikan_layar_2026-06-14_001134_hcl8hz.png)
