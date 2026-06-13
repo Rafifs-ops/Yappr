@@ -137,3 +137,69 @@ Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan ra
 ## ERD
 
 ![gambar-erd](https://res.cloudinary.com/dzj9avwsg/image/upload/v1781370962/Cuplikan_layar_2026-06-14_001134_hcl8hz.png)
+
+---
+
+## Endpoint API List
+
+### 🔐 Autentikasi (Auth) & Keamanan
+
+| Endpoint API | Method HTTP | Fungsi |
+| --- | --- | --- |
+| `/api/auth/login` | `POST` | Mengautentikasi pengguna (masuk ke akun). |
+| `/api/auth/logout` | `POST` | Mengakhiri sesi pengguna (keluar dari akun). |
+| `/api/auth/register` | `POST` | Mendaftarkan akun pengguna baru. |
+| `/api/auth/session` | `GET` | Mendapatkan data sesi atau informasi pengguna yang sedang login saat ini. |
+| `/api/reset-password` | `POST` | Mereset kata sandi pengguna. |
+| `/api/send-otp` | `POST` | Mengirimkan kode OTP (One Time Password) untuk verifikasi. |
+| `/api/verify-otp` | `POST` | Memverifikasi kode OTP yang telah dikirimkan. |
+
+### 👤 Pengguna (User) & Relasi (Follow)
+
+| Endpoint API | Method HTTP | Fungsi |
+| --- | --- | --- |
+| `/api/user` | `GET` | Mendapatkan daftar pengguna. |
+| `/api/user/:id` | `GET` | Mendapatkan profil detail dari pengguna tertentu berdasarkan ID. |
+| `/api/user/search` | `GET` | Mencari pengguna berdasarkan kata kunci (query). |
+| `/api/user/update` | `PUT` | Memperbarui profil/data pengguna. |
+| `/api/user/get-follow-lists/:id` | `GET` | Mendapatkan daftar *followers* (pengikut) dan *following* (yang diikuti) dari pengguna tertentu. |
+| `/api/follow/add` | `POST` | Mengikuti (*follow*) pengguna lain atau mengirimkan permintaan mengikuti. |
+| `/api/follow/remove` | `POST` | Batal mengikuti (*unfollow*) pengguna lain atau menghapus pengikut. |
+| `/api/follow/accept` | `POST` | Menerima permintaan mengikuti (*follow request*). |
+| `/api/follow/reject` | `POST` | Menolak permintaan mengikuti. |
+
+### 📝 Twits (Postingan/Cuitan)
+
+| Endpoint API | Method HTTP | Fungsi |
+| --- | --- | --- |
+| `/api/twits` | `GET` | Mendapatkan daftar cuitan (timeline). |
+| `/api/twits` | `POST` | Membuat cuitan (twit) baru. |
+| `/api/twits` | `DELETE` | Menghapus cuitan tertentu. |
+| `/api/twits/:id` | `GET` | Mendapatkan detail sebuah cuitan berdasarkan ID. |
+| `/api/twits/subTwit/:id` | `GET` | Mendapatkan balasan/komentar dari sebuah cuitan tertentu. |
+| `/api/twits/user/:id` | `GET` | Mendapatkan daftar cuitan yang dibuat oleh pengguna tertentu. |
+| `/api/twits/user/:userId/liked` | `GET` | Mendapatkan daftar cuitan yang disukai oleh pengguna tertentu. |
+| `/api/twits/user/:userId/reposted` | `GET` | Mendapatkan daftar cuitan yang di-*repost* oleh pengguna tertentu. |
+| `/api/twits/hashtag/:hashtag` | `GET` | Mendapatkan daftar cuitan berdasarkan hashtag tertentu. |
+| `/api/hashtags/trending` | `GET` | Mendapatkan daftar hashtag yang sedang tren. |
+
+### ❤️ Interaksi (Like, Repost, Notifikasi)
+
+| Endpoint API | Method HTTP | Fungsi |
+| --- | --- | --- |
+| `/api/like/add` | `POST` | Menyukai (*like*) sebuah cuitan. |
+| `/api/like/remove` | `POST` | Batal menyukai (*unlike*) sebuah cuitan. |
+| `/api/repost/add` | `POST` | Membagikan ulang (*repost*) sebuah cuitan. |
+| `/api/repost/remove` | `POST` | Batal membagikan ulang (*un-repost*) sebuah cuitan. |
+| `/api/notifications` | `GET` | Mendapatkan daftar notifikasi pengguna. |
+| `/api/notifications/:id` | `PATCH` | Memperbarui status notifikasi (contoh: menandai notifikasi telah dibaca). |
+
+### 💬 Obrolan (Chat)
+
+| Endpoint API | Method HTTP | Fungsi |
+| --- | --- | --- |
+| `/api/chat` | `GET` | Mendapatkan daftar ruang obrolan (chat list) pengguna. |
+| `/api/chat` | `POST` | Membuat ruang obrolan baru atau mengirim pesan awal ke pengguna lain. |
+| `/api/chat/:id/message` | `GET` | Mendapatkan riwayat pesan dari ruang obrolan tertentu berdasarkan ID obrolan. |
+
+*(Catatan: Karakter `:id`, `:userId`, dan `:hashtag` pada tabel di atas mewakili parameter dinamis yang dikirimkan pada URL, sejalan dengan format penamaan file Nuxt `[id].get.ts`)*.
