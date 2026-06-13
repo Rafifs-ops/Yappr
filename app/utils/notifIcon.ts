@@ -7,6 +7,7 @@ export function getIcon(type: string) {
         case 'follow': return 'streamline-ultimate:following-1-bold'
         case 'follow_request': return 'ph:user-plus-bold'
         case 'follow_accept': return 'ph:check-circle-bold'
+        case 'mention': return 'streamline-ultimate:messages-people-user-bubble-circle-bold'
         default: return 'streamline-ultimate:alert-bell-notification-2-bold'
     }
 }
@@ -19,6 +20,7 @@ export function getIconColor(type: string) {
         case 'follow': return 'text-violet-500'
         case 'follow_request': return 'text-amber-500'
         case 'follow_accept': return 'text-emerald-400'
+        case 'mention': return 'text-cyan-400'
         default: return 'text-purple-300'
     }
 }

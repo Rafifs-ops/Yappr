@@ -18,6 +18,27 @@ const { data: fetchedData, pending, error, refresh } = await useAsyncData(`comme
     return { response: twitData, comments: commentsData };
 });
 
+if (fetchedData.value?.response) {
+    const twit = fetchedData.value.response;
+
+    // Hilangkan tag HTML dari konten twit (karena twit.text pakai v-html)
+    const plainText = twit.text ? twit.text.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...' : 'Lihat twit ini di Yappr';
+
+    // Dapatkan origin URL (misal: https://yappr.com) secara dinamis baik di Server maupun Client
+    const baseUrl = useRequestURL().origin;
+
+    useSeoMeta({
+        title: `${twit.user?.username} di Yappr`,
+        ogTitle: `${twit.user?.username} memposting di Yappr`,
+        description: plainText,
+        ogDescription: plainText,
+        // Jika ada attachment gambar, gunakan itu. Jika tidak, gunakan avatar user
+        ogImage: twit.image || twit.user?.photo || `${baseUrl}/images/brand-yappr.png`,
+        ogUrl: `${baseUrl}/twit/${twit._id}`,
+        twitterCard: twit.image ? 'summary_large_image' : 'summary',
+    });
+}
+
 // Buat state lokal yang 100% reaktif dan bisa dimodifikasi untuk optimistic update
 const data = ref(null);
 watch(fetchedData, (newData) => {

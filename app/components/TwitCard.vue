@@ -19,6 +19,33 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
+
+const shareTwit = async () => {
+    // Buat URL absolut untuk twit ini
+    const twitUrl = `${window.location.origin}/twit/${props.twit._id}`;
+    const plainText = props.twit.text ? props.twit.text.replace(/<[^>]*>?/gm, '').substring(0, 50) + '...' : 'Lihat twit ini!';
+
+    // Jika browser mendukung fitur Native Share (biasanya di Mobile)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: `Twit dari @${props.twit.user?.username}`,
+                text: plainText,
+                url: twitUrl
+            });
+        } catch (err) {
+            console.log('User membatalkan share');
+        }
+    } else {
+        // Fallback: Copy link ke clipboard untuk Desktop
+        try {
+            await navigator.clipboard.writeText(twitUrl);
+            alert('Tautan twit berhasil disalin ke clipboard!');
+        } catch (err) {
+            console.error('Gagal menyalin tautan', err);
+        }
+    }
+}
 </script>
 
 <template>
@@ -111,6 +138,11 @@ const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
                     : 'text-purple-300 bg-purple-900/30 border-purple-800/40 hover:border-purple-400 hover:text-purple-600'">
                 <Icon name="streamline-ultimate:switch-account-1-bold" />
                 <span>{{ twit.repostCount }}</span>
+            </button>
+
+            <button @click.prevent="shareTwit"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-400 hover:text-purple-600 text-xs font-mono transition-all duration-300">
+                <Icon name="streamline-ultimate:share" class="w-4 h-4" />
             </button>
 
             <NuxtLink :to="`/twit/${twit._id}`"

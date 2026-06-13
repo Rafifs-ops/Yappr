@@ -1,6 +1,7 @@
 import { Twit } from '../../models/Twit.schema';
 import { Notification } from '../../models/Notification.schema';
 import { session } from '../../utils/session';
+import { User } from '../../models/User.schema';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
@@ -69,6 +70,10 @@ export default defineEventHandler(async (event) => {
         // Membersihkan tag HTML dari tiptap
         const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
 
+        const mentionedUsernames = text.match(/@([a-zA-Z0-9_]+)/g)?.map(m => m.substring(1)) || [];
+        const taggedUsers = await User.find({ username: { $in: mentionedUsernames } });
+        const mentionIds = taggedUsers.map(user => user._id);
+
         // Tolak jika teks kosong
         if (!plainText) {
             throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
@@ -112,6 +117,7 @@ export default defineEventHandler(async (event) => {
             image: imageUrl,
             video: videoUrl,
             hashtags: hashtags || [],
+            mentions: mentionIds,
             likesCount: 0,
             commentCount: 0,
             SubTwit: {
@@ -119,6 +125,23 @@ export default defineEventHandler(async (event) => {
                 reference: twitId ? twitId : null
             }
         });
+
+        if (mentionIds.length > 0) {
+            // Kirim Notifikasi ke setiap user yang di-tag
+            for (const taggedUser of taggedUsers) {
+                // Jangan kirim notifikasi jika user menge-tag dirinya sendiri
+                if (taggedUser._id.toString() !== user.id.toString()) {
+                    await Notification.create({
+                        user: taggedUser._id,
+                        sender: user.id,
+                        type: 'mention',
+                        twitId: newTwit._id,
+                        message: 'menandai Anda dalam yappingannya',
+                        twitText: text,
+                    });
+                }
+            }
+        }
 
         if (twitId) {
             await Twit.findByIdAndUpdate(twitId, { $inc: { commentCount: 1 } });

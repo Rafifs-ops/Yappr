@@ -26,7 +26,11 @@ const twitSchema = new Schema({
         reference: { type: Schema.Types.ObjectId, ref: 'Twit', default: null }
     },
     /** Extracted hashtags for quick filtering and trending features */
-    hashtags: [{ type: String, lowercase: true, trim: true }]
+    hashtags: [{ type: String, lowercase: true, trim: true }],
+    mentions: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, { timestamps: true });
 
 // Indexing hashtags for faster text search queries
