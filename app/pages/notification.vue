@@ -10,7 +10,9 @@ definePageMeta({
     layout: 'default'
 })
 
-const { data: notifications, refresh } = await useFetch('/api/notifications')
+const { data: notifications, refresh } = await useFetch('/api/notifications', {
+    key: 'notifications-data'
+});
 
 const markAsRead = async (notification) => {
     if (notification.isRead) return
@@ -18,7 +20,9 @@ const markAsRead = async (notification) => {
     await $csrfFetch(`/api/notifications/${notification._id}`, {
         method: 'PATCH'
     })
-    refresh()
+
+    // Gunakan refreshNuxtData agar NavBottom juga terupdate
+    refreshNuxtData('notifications-data');
 }
 
 const handleRequest = async (notif, action) => {
@@ -30,7 +34,7 @@ const handleRequest = async (notif, action) => {
                 following: auth.session.id
             }
         });
-        refresh();
+        refreshNuxtData('notifications-data');
     } catch (err) {
         alert(err.statusMessage || 'Gagal memproses permintaan');
     }
