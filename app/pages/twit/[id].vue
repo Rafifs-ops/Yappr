@@ -157,7 +157,7 @@ const deleteMainTwit = async () => {
                 </div>
             </div>
 
-            <CommentsView :comments="data.comments" :twitId="twitId" />
+            <CommentsView :comments="data.comments" :twitId="twitId" @refresh="refresh" />
         </div>
     </main>
 </template>

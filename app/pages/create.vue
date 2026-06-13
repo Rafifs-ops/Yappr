@@ -26,7 +26,6 @@ function onFileChange(e) {
     // Cek apakah file adalah video atau gambar
     if (file.type.startsWith('image/')) {
         imageFile.value = file;
-        // Gunakan createObjectURL untuk preview yang lebih ringan dari Base64
         imagePreview.value = URL.createObjectURL(file);
     } else if (file.type.startsWith('video/')) {
         const videoElement = document.createElement('video');
@@ -165,7 +164,7 @@ async function handlePost() {
 
                     <div class="flex items-center justify-between pt-2">
                         <div class="flex items-center space-x-3">
-                            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*,video/*"
+                            <input type="file" ref="fileInput" @change="onFileChange" accept="image/*, video/*"
                                 class="hidden" />
                             <button @click="triggerFileInput"
                                 class="flex items-center space-x-2 btn-neon-purple py-2 px-4 rounded-md font-semibold">

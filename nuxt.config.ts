@@ -31,6 +31,13 @@ export default defineNuxtConfig({
         'img-src': [
           "'self'",
           "data:",
+          "blob:",
+          "https://res.cloudinary.com"
+        ],
+        'media-src': [
+          "'self'",
+          "data:",
+          "blob:",
           "https://res.cloudinary.com"
         ],
       },

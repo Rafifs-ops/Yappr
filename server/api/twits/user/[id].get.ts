@@ -25,10 +25,10 @@ export default defineEventHandler(async (event) => {
             if (!currentUser) {
                 return [];
             }
-            const follow = await Follow.findOne({ 
-                follower: currentUser.id, 
-                following: id, 
-                $or: [{ status: 'accepted' }, { status: { $exists: false } }] 
+            const follow = await Follow.findOne({
+                follower: currentUser.id,
+                following: id,
+                $or: [{ status: 'accepted' }, { status: { $exists: false } }]
             });
             if (!follow) {
                 return [];
@@ -37,6 +37,7 @@ export default defineEventHandler(async (event) => {
 
         // 1. Ambil twit
         const twits = await Twit.find({ user: id })
+            .sort({ createdAt: -1 })
             .populate('user', 'username photo')
             .populate({
                 path: 'SubTwit.reference',

@@ -178,14 +178,14 @@ async function handleVerifyOTP() {
             <form v-else class="flex flex-col gap-4 text-left" @submit.prevent="handleVerifyOTP">
                 <div class="p-3 bg-purple-900/20 border border-purple-700/50 rounded-xl mb-2">
                     <p class="text-purple-100 text-xs leading-relaxed font-mono">
-                        Security protocol activated. OTP token has been dispatched to: <br>
+                        Kode OTP telah dikirim ke email: <br>
                         <span class="font-bold text-purple-600">{{ dataRegister.email }}</span>.
                     </p>
                 </div>
 
                 <div class="flex flex-col gap-1">
-                    <label for="otp" class="text-purple-300 text-xs font-mono tracking-wider ml-1">VERIFICATION
-                        OTP EMAIL</label>
+                    <label for="otp" class="text-purple-300 text-xs font-mono tracking-wider ml-1">KODE OTP
+                        EMAIL</label>
                     <input type="text" id="otp" placeholder="••••••"
                         class="w-full px-4 py-3 rounded-xl bg-[#1a0b2e]/80 backdrop-blur-md border border-purple-800/50 text-white placeholder-purple-400/70 focus:border-purple-400 focus:bg-[#1a0b2e]/80 backdrop-blur-md focus:outline-none focus:shadow-[0_0_12px_rgba(2,132,199,0.15)] transition duration-300 font-mono tracking-[0.4em] text-center font-bold text-lg"
                         required v-model="otp" />

@@ -3,8 +3,8 @@ import { session } from "~~/server/utils/session";
 import { MemberChat } from "~~/server/models/memberChat.schema";
 
 export default defineEventHandler(async (event) => {
-    const auth = await session(event);
-    const chatId = getRouterParam(event, 'id');
+    const auth = await session(event); // mengambil session
+    const chatId = getRouterParam(event, 'id'); // mengambil id dari url
 
     // Cek apakah user adalah anggota dari chat ini
     const isMember = await MemberChat.findOne({ conversationId: chatId, userId: auth.id });

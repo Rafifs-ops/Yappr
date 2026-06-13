@@ -3,18 +3,21 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export default defineEventHandler(async (event) => {
-    const data = await readBody(event);
-    const photo = event.context.photo;
+    const data = await readBody(event); // Mengambil data body request
+    const photo = event.context.photo; // Mengambil foto
 
+    // Validasi apakah data ada / tidak
     if (!data.username || !data.password || !data.email || !data.bio) {
         throw createError({ statusCode: 400, statusMessage: 'data belum lengkap' });
     }
 
+    // Validasi format username (huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter)
     const usernameRegex = /^[a-z]{4,15}$/;
     if (!usernameRegex.test(data.username)) {
         throw createError({ statusCode: 400, statusMessage: 'Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter' });
     }
 
+    // Validasi format email (hanya gmail / yahoo)
     const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|yahoo)\.com$/;
     if (!emailRegex.test(data.email)) {
         throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid. Gunakan format seperti @gmail.com atau @yahoo.com' });
@@ -25,6 +28,7 @@ export default defineEventHandler(async (event) => {
         $or: [{ email: data.email }, { username: data.username }]
     });
 
+    // jika user sudah ada
     if (existingUser) {
         throw createError({
             statusCode: 409, // 409 Conflict
@@ -32,10 +36,11 @@ export default defineEventHandler(async (event) => {
         });
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await bcrypt.hash(data.password, 10); // hashing password dengan 10 salt
 
     try {
-        const user = await User.create({
+        // Input user ke database
+        await User.create({
             username: data.username,
             photo: photo,
             email: data.email,

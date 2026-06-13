@@ -4,21 +4,38 @@ const auth = useAuth();
 const { $csrfFetch } = useNuxtApp();
 const props = defineProps(['twitId', 'comments']);
 
+const emit = defineEmits(['refresh']);
 const newComment = ref('');
 const isSubmitting = ref(false);
-const submitComment = async () => {
-    if (!newComment.value.trim()) return;
 
+const submitComment = async () => {
     isSubmitting.value = true;
 
+    const regex = /#[a-zA-Z0-9_]+/g;
+    const hashtags = newComment.value.match(regex) || [];
+    const cleanHashtags = hashtags.map(tag => tag.replace("#", ""));
+    const finalText = newComment.value.replace(regex, '').replace(/\s+/g, " ").trim();
+
+    const plainText = newComment.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+    if (!plainText) {
+        alert('Tolong isi twit');
+        return;
+    }
+
     try {
+        // Beralih menggunakan FormData
+        const formData = new FormData();
+        formData.append('text', finalText);
+        formData.append('hashtags', JSON.stringify(cleanHashtags));
+        formData.append('twitId', props.twitId);
+
         await $csrfFetch('/api/twits', {
             method: 'POST',
-            body: { twitId: props.twitId, text: newComment.value }
+            body: formData
         });
 
         newComment.value = '';
-        await refresh(); // Memuat ulang daftar komentar
+        emit('refresh'); // Memuat ulang daftar komentar
     } catch (e) {
         alert(e.statusMessage);
         return
@@ -33,7 +50,7 @@ const deleteComment = async (commentId) => {
             method: 'DELETE',
             body: { twitId: commentId }
         });
-        await refresh();
+        emit('refresh');
     } catch (e) {
         alert(e.statusMessage || 'Gagal menghapus komentar');
     }
@@ -85,11 +102,11 @@ async function toggleLike(twitId) {
     </div>
 
     <div class="border-b border-purple-800/50 pb-2 pt-4">
-        <span class="font-orbitron text-[10px] font-bold text-purple-300 tracking-widest">BALASAN</span>
+        <span class="font-orbitron text-xl font-bold text-purple-300 tracking-widest">BALASAN</span>
     </div>
 
     <!--Comments List-->
-    <div v-if="props.comments && props.comments.length">
+    <div v-if="props.comments && props.comments.length" class="space-y-2">
         <div v-for="comment in props.comments" :key="comment._id"
             class="bg-purple-900/20/50 p-4 rounded-xl border border-purple-800/40 relative overflow-hidden group/comment">
 
@@ -113,6 +130,13 @@ async function toggleLike(twitId) {
 
             <div class="twit-content">
                 <div v-html="comment.text"></div>
+            </div>
+
+            <div v-if="comment.hashtags?.length" class="flex flex-wrap gap-2 mt-2">
+                <NuxtLink v-for="(hashtag, idx) in comment.hashtags" :key="idx" :to="`/twits/${hashtag}`"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-xs font-mono transition-all duration-300">
+                    <span>#{{ hashtag }}</span>
+                </NuxtLink>
             </div>
 
             <div class="mt-4 flex justify-between border-t border-purple-800/40 pt-2">

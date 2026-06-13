@@ -6,30 +6,33 @@ import { User } from "../../models/User.schema";
 
 export default defineEventHandler(async (event) => {
     try {
-        const auth = await session(event);
-        
-        // Find all chats where the current user is a member
-        const memberChats = await MemberChat.find({ userId: auth.id }).populate('conversationId');
-        
-        const chatList = [];
+        const auth = await session(event); // mengambil session
 
+        // mengambil semua chat di mana user adalah anggota
+        const memberChats = await MemberChat.find({ userId: auth.id }).populate('conversationId');
+
+        const chatList = []; // inisialisasi chatList
+
+        // Looping semua chat di mana user adalah anggota
         for (const mc of memberChats) {
-            const chat = mc.conversationId;
+            const chat = mc.conversationId; // mengambil chat
             if (!chat) continue;
 
-            // Get the other members of this chat
-            const otherMembers = await MemberChat.find({ 
-                conversationId: chat._id, 
-                userId: { $ne: auth.id } 
+            // mengambil anggota lain dari chat
+            const otherMembers = await MemberChat.find({
+                conversationId: chat._id,
+                userId: { $ne: auth.id }
             }).populate('userId');
 
-            // Determine chat name and photo (default to the first other member if it's a 1-on-1 chat)
+            // menentukan nama dan foto chat (default ke anggota lain pertama jika ini adalah chat 1-on-1)
             let chatName = chat.name;
             let chatPhoto = null;
             let otherUserId = null;
 
+            // jika anggota lain ada
             if (otherMembers.length > 0) {
                 const otherUser = otherMembers[0].userId as any;
+                // jika nama chat tidak ada atau "Direct Message" maka akan diisi dengan nama anggota lain
                 if (!chatName || chatName === 'Direct Message') {
                     chatName = otherUser.username;
                 }
@@ -37,11 +40,12 @@ export default defineEventHandler(async (event) => {
                 otherUserId = otherUser._id;
             }
 
-            // Get the latest message for preview
+            // mengambil pesan terakhir untuk preview
             const latestMessage = await Message.findOne({ chatId: chat._id })
                 .sort({ createdAt: -1 })
                 .populate('senderId');
 
+            // memasukkan data ke chatList
             chatList.push({
                 _id: chat._id,
                 name: chatName,

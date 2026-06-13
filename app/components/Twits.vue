@@ -59,6 +59,16 @@ watch(fetchedTwits, (newData) => {
             BELUM ADA YANG UPLOAD TWIT
         </div>
 
+        <div v-else-if="!twits?.length && id && type === 'liked'"
+            class="text-center font-orbitron font-bold text-sm p-12 text-purple-400 bg-purple-900/30/30 rounded-2xl border border-purple-800/50/50 max-w-xl mx-auto shadow-inner">
+            USER BELUM MENYUKAI TWIT LAIN
+        </div>
+
+        <div v-else-if="!twits?.length && id && type === 'reposted'"
+            class="text-center font-orbitron font-bold text-sm p-12 text-purple-400 bg-purple-900/30/30 rounded-2xl border border-purple-800/50/50 max-w-xl mx-auto shadow-inner">
+            USER BELUM MEREPOST TWIT LAIN
+        </div>
+
         <div v-else-if="!twits?.length && id"
             class="text-center font-orbitron font-bold text-sm p-12 text-purple-400 bg-purple-900/30/30 rounded-2xl border border-purple-800/50/50 max-w-xl mx-auto shadow-inner">
             USER INI BELUM MENGUPLOAD TWIT
