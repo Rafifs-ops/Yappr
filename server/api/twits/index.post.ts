@@ -71,8 +71,14 @@ export default defineEventHandler(async (event) => {
         const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
 
         const mentionedUsernames = text.match(/@([a-zA-Z0-9_]+)/g)?.map(m => m.substring(1)) || [];
-        const taggedUsers = await User.find({ username: { $in: mentionedUsernames } });
-        const mentionIds = taggedUsers.map(user => user._id);
+        let mentionIds: string[] = [];
+        let taggedUsers: any[] = [];
+
+        // Check user if mentioned
+        if (mentionedUsernames.length > 0) {
+            taggedUsers = await User.find({ username: { $in: mentionedUsernames } });
+            mentionIds = taggedUsers.map(user => user._id.toString());
+        }
 
         // Tolak jika teks kosong
         if (!plainText) {
