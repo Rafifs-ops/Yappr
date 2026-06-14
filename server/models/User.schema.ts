@@ -9,7 +9,8 @@ const userSchema = new Schema({
     emailVerifiedAt: { type: Date, default: null }, // Jika masih null, maka belum terverifikasi
     followers: { type: Number, default: 0 },
     following: { type: Number, default: 0 },
-    isPrivate: { type: Boolean, default: false }
+    isPrivate: { type: Boolean, default: false },
+    refreshToken: { type: String, default: null }
 }, { timestamps: true });
 
 export const User = model('User', userSchema);

@@ -10,10 +10,10 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Email atau Password belum ada' });
     }
 
-    // Validasi format email (hanya gmail / yahoo)
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|yahoo)\.com$/;
+    // Validasi format email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(data.email)) {
-        throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid. Gunakan format seperti @gmail.com atau @yahoo.com' });
+        throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
     }
 
     // Mencari user berdasarkan email, output: objek
@@ -48,11 +48,23 @@ export default defineEventHandler(async (event) => {
 
     // Jika password cocok
     if (isMatch) {
-        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '49d' }) // Buat token dengan payload isi userId
+        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '15m' }) // Buat access token
+        const refreshToken = jwt.sign(payload, secretAuthKey, { expiresIn: '7d' });
 
-        // Token disimpan di cookie dengan key 'auth_token' dan masa berlaku 7 minggu
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        // Token disimpan di cookie dengan key 'auth_token' dan masa berlaku 15 menit
         setCookie(event, 'auth_token', token, {
-            maxAge: 60 * 60 * 24 * 7 * 7,  // 7 minggu
+            maxAge: 60 * 15,  // 15 menit
+            httpOnly: true,
+            secure: true,
+        })
+        
+        setCookie(event, 'refresh_token', refreshToken, {
+            maxAge: 60 * 60 * 24 * 7,  // 7 hari
+            httpOnly: true,
+            secure: true,
         })
         return {
             status: 'berhasil login'

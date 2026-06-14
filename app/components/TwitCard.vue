@@ -1,5 +1,6 @@
 <script setup>
 import { formatDate } from '~/utils/formatDate';
+import DOMPurify from 'dompurify';
 
 /**
  * A reusable component for displaying a single Twit, including its
@@ -92,7 +93,7 @@ const shareTwit = async () => {
 
         <!-- Twit Body Content -->
         <div class="text-white text-sm mt-1 twit-content leading-relaxed">
-            <div v-html="twit.text"></div>
+            <div v-html="DOMPurify.sanitize(twit.text)"></div>
         </div>
 
         <div v-if="twit.hashtags?.length" class="flex flex-wrap gap-2 mt-2">

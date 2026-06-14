@@ -3,6 +3,7 @@ import { Notification } from '../../models/Notification.schema';
 import { session } from '../../utils/session';
 import { User } from '../../models/User.schema';
 import { v2 as cloudinary } from 'cloudinary';
+import mongoose from 'mongoose';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -116,54 +117,68 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Simpan data ke MongoDB
-        const newTwit = await Twit.create({
-            user: user.id,
-            text: text,
-            image: imageUrl,
-            video: videoUrl,
-            hashtags: hashtags || [],
-            mentions: mentionIds,
-            likesCount: 0,
-            commentCount: 0,
-            SubTwit: {
-                isSubTwit: twitId ? true : false,
-                reference: twitId ? twitId : null
-            }
-        });
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
+        let newTwit;
 
-        if (mentionIds.length > 0) {
-            // Kirim Notifikasi ke setiap user yang di-tag
-            for (const taggedUser of taggedUsers) {
-                // Jangan kirim notifikasi jika user menge-tag dirinya sendiri
-                if (taggedUser._id.toString() !== user.id.toString()) {
-                    await Notification.create({
-                        user: taggedUser._id,
-                        sender: user.id,
-                        type: 'mention',
-                        twitId: newTwit._id,
-                        message: 'menandai Anda dalam yappingannya',
-                        twitText: text,
-                    });
+        try {
+            // Simpan data ke MongoDB
+            const newTwitArr = await Twit.create([{
+                user: user.id,
+                text: text,
+                image: imageUrl,
+                video: videoUrl,
+                hashtags: hashtags || [],
+                mentions: mentionIds,
+                likesCount: 0,
+                commentCount: 0,
+                SubTwit: {
+                    isSubTwit: twitId ? true : false,
+                    reference: twitId ? twitId : null
+                }
+            }], { session: dbSession });
+            newTwit = newTwitArr[0];
+
+            if (mentionIds.length > 0) {
+                // Kirim Notifikasi ke setiap user yang di-tag
+                for (const taggedUser of taggedUsers) {
+                    // Jangan kirim notifikasi jika user menge-tag dirinya sendiri
+                    if (taggedUser._id.toString() !== user.id.toString()) {
+                        await Notification.create([{
+                            user: taggedUser._id,
+                            sender: user.id,
+                            type: 'mention',
+                            twitId: newTwit._id,
+                            message: 'menandai Anda dalam yappingannya',
+                            twitText: text,
+                        }], { session: dbSession });
+                    }
                 }
             }
-        }
 
-        if (twitId) {
-            await Twit.findByIdAndUpdate(twitId, { $inc: { commentCount: 1 } });
+            if (twitId) {
+                await Twit.findByIdAndUpdate(twitId, { $inc: { commentCount: 1 } }, { session: dbSession });
 
-            const twit = await Twit.findById(twitId);
-            if (twit && twit.user.toString() !== user.id.toString()) {
-                await Notification.create({
-                    user: twit.user,
-                    sender: user.id,
-                    type: 'comment',
-                    message: 'mengomentari twit Anda',
-                    twitText: twit.text,
-                    twitId: twitId, // Menggunakan twitId yang diekstrak dari form
-                    commentText: text,
-                });
+                const twit = await Twit.findById(twitId).session(dbSession);
+                if (twit && twit.user.toString() !== user.id.toString()) {
+                    await Notification.create([{
+                        user: twit.user,
+                        sender: user.id,
+                        type: 'comment',
+                        message: 'mengomentari twit Anda',
+                        twitText: twit.text,
+                        twitId: twitId, // Menggunakan twitId yang diekstrak dari form
+                        commentText: text,
+                    }], { session: dbSession });
+                }
             }
+
+            await dbSession.commitTransaction();
+            dbSession.endSession();
+        } catch (error) {
+            await dbSession.abortTransaction();
+            dbSession.endSession();
+            throw error;
         }
 
         return { success: true, data: newTwit };

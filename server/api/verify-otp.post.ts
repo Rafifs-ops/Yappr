@@ -40,9 +40,22 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, message: 'JWT Secret is not defined in runtime config' });
         }
 
-        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '49d' })
+        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '15m' })
+        const refreshToken = jwt.sign(payload, secretAuthKey, { expiresIn: '7d' });
+
+        user.refreshToken = refreshToken;
+        await user.save();
+
         setCookie(event, 'auth_token', token, {
-            maxAge: 60 * 60 * 24 * 7 * 7,  // 7 minggu
+            maxAge: 60 * 15,  // 15 menit
+            httpOnly: true,
+            secure: true,
+        });
+        
+        setCookie(event, 'refresh_token', refreshToken, {
+            maxAge: 60 * 60 * 24 * 7,  // 7 hari
+            httpOnly: true,
+            secure: true,
         });
 
         // Hapus OTP setelah berhasil

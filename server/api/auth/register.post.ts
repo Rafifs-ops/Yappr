@@ -17,10 +17,10 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter' });
     }
 
-    // Validasi format email (hanya gmail / yahoo)
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|yahoo)\.com$/;
+    // Validasi format email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(data.email)) {
-        throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid. Gunakan format seperti @gmail.com atau @yahoo.com' });
+        throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
     }
 
     // Cek apakah username atau email sudah terdaftar

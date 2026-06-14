@@ -52,9 +52,9 @@ async function handleRegister() {
         return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|yahoo)\.com$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(dataRegister.value.email)) {
-        alert("Format email tidak valid. Gunakan format seperti @gmail.com atau @yahoo.com");
+        alert("Format email tidak valid.");
         return;
     }
 

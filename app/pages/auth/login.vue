@@ -15,9 +15,9 @@ const form = reactive({
 const router = useRouter();
 const auth = useAuth();
 const login = async () => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|yahoo)\.com$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(form.email)) {
-        alert("Format email tidak valid. Gunakan format seperti @gmail.com atau @yahoo.com");
+        alert("Format email tidak valid.");
         return;
     }
 

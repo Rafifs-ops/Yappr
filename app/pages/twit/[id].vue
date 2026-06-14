@@ -1,5 +1,6 @@
 <script setup>
 import { useAuth } from '../../stores/Auth';
+import DOMPurify from 'dompurify';
 const auth = useAuth();
 
 const { $csrfFetch } = useNuxtApp();
@@ -143,7 +144,7 @@ const deleteMainTwit = async () => {
                     </button>
                 </div>
 
-                <div class="text-white text-sm mt-3 twit-content leading-relaxed" v-html="data.response?.text">
+                <div class="text-white text-sm mt-3 twit-content leading-relaxed" v-html="DOMPurify.sanitize(data.response?.text)">
                 </div>
                 <div class="flex flex-wrap gap-2 mt-2" v-if="data.response.hashtags?.length">
                     <NuxtLink :to="`/twits/${hashtag}`" v-for="hashtag in data.response.hashtags"

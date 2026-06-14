@@ -1,5 +1,6 @@
 <script setup>
 import { useAuth } from '../stores/Auth';
+import DOMPurify from 'dompurify';
 const auth = useAuth();
 const { $csrfFetch } = useNuxtApp();
 const props = defineProps(['twitId', 'comments']);
@@ -129,7 +130,7 @@ async function toggleLike(twitId) {
             </div>
 
             <div class="twit-content">
-                <div v-html="comment.text"></div>
+                <div v-html="DOMPurify.sanitize(comment.text)"></div>
             </div>
 
             <div v-if="comment.hashtags?.length" class="flex flex-wrap gap-2 mt-2">
