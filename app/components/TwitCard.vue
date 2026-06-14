@@ -1,6 +1,6 @@
 <script setup>
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 
 /**
  * A reusable component for displaying a single Twit, including its

@@ -6,6 +6,8 @@ definePageMeta({
     layout: 'auth'
 })
 
+const isLoading = ref(false);
+
 // State untuk menampung input user
 const form = reactive({
     email: '',
@@ -15,6 +17,7 @@ const form = reactive({
 const router = useRouter();
 const auth = useAuth();
 const login = async () => {
+    isLoading.value = true;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(form.email)) {
         alert("Format email tidak valid.");
@@ -65,9 +68,9 @@ const login = async () => {
                         required />
                 </div>
 
-                <button type="submit"
+                <button :disabled="isLoading" type="submit"
                     class="w-full btn-neon-purple font-orbitron font-bold py-3.5 rounded-xl transition duration-300 shadow-lg tracking-widest text-sm mt-2">
-                    LOGIN
+                    {{ isLoading ? 'Loading...' : 'LOGIN' }}
                 </button>
             </form>
 
