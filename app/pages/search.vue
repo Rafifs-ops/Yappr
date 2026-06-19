@@ -34,7 +34,6 @@ const dataProfile = computed(() => {
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
             <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
-            SEDANG MENCARI...
         </div>
 
         <div v-else-if="error"
@@ -77,7 +76,7 @@ const dataProfile = computed(() => {
                         class="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-900/20 text-purple-200 text-xs font-mono hover:bg-purple-800/50 hover:border-purple-400 transition-all cursor-pointer flex items-center gap-1">
                         <span class="text-purple-400">#</span>{{ item.hashtag }}
                         <span class="text-[9px] text-purple-500 ml-1 bg-purple-950 px-1.5 rounded-full">{{ item.count
-                            }}</span>
+                        }}</span>
                     </NuxtLink>
                 </div>
 
