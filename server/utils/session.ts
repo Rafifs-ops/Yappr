@@ -50,6 +50,7 @@ export const session = async (event: any) => {
                 maxAge: 60 * 15,  // 15 menit
                 httpOnly: true,
                 secure: true,
+                path: '/',
             });
 
             decodedToken = payload;

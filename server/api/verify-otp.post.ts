@@ -50,12 +50,14 @@ export default defineEventHandler(async (event) => {
             maxAge: 60 * 15,  // 15 menit
             httpOnly: true,
             secure: true,
+            path: '/',
         });
         
         setCookie(event, 'refresh_token', refreshToken, {
             maxAge: 60 * 60 * 24 * 7,  // 7 hari
             httpOnly: true,
             secure: true,
+            path: '/',
         });
 
         // Hapus OTP setelah berhasil

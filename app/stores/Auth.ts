@@ -12,7 +12,7 @@ export const useAuth = defineStore("auth", () => {
             const data = await $fetch('/api/auth/session', {
                 headers
             })
-            session.value = data // Menyimpan data auth di variable session client
+            session.value = data as any // Menyimpan data auth di variable session client
         } catch (e) {
             session.value = null // Mengembalikan null jika tidak ada data auth
         }

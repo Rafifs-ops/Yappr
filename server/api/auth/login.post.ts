@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Membandingkan password
-    const isMatch = await bcrypt.compare(data.password, user.password);
+    const isMatch = await bcrypt.compare(data.password, user.password as string);
     const secretAuthKey = process.env.JWT_SECRET; // Mengambil JWT Secret
 
     // Validasi JWT Secret
@@ -59,12 +59,14 @@ export default defineEventHandler(async (event) => {
             maxAge: 60 * 15,  // 15 menit
             httpOnly: true,
             secure: true,
+            path: '/',
         })
-        
+
         setCookie(event, 'refresh_token', refreshToken, {
             maxAge: 60 * 60 * 24 * 7,  // 7 hari
             httpOnly: true,
             secure: true,
+            path: '/',
         })
         return {
             status: 'berhasil login'
