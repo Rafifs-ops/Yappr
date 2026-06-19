@@ -1,11 +1,31 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
+
+export interface ISubTwit {
+    isSubTwit: boolean;
+    reference?: Types.ObjectId | null;
+}
+
+export interface ITwit extends Document {
+    user: Types.ObjectId;
+    text: string;
+    image?: string;
+    video?: string;
+    likesCount: number;
+    commentCount: number;
+    repostCount: number;
+    SubTwit?: ISubTwit;
+    hashtags?: string[];
+    mentions?: Types.ObjectId[];
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 /**
  * Mongoose Schema for a Twit (Post).
  * Represents a user's post, which can include text, an image, and hashtags.
  * It also supports threading (SubTwit) to represent replies or quote-retwits.
  */
-const twitSchema = new Schema({
+const twitSchema = new Schema<ITwit>({
     /** Reference to the User who created the twit */
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     /** Main content of the twit. From WYSIWYG Dragon Editor*/
@@ -36,4 +56,4 @@ const twitSchema = new Schema({
 // Indexing hashtags for faster text search queries
 twitSchema.index({ hashtags: 1 });
 
-export const Twit = model('Twit', twitSchema);
+export const Twit = model<ITwit>('Twit', twitSchema);

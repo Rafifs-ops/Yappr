@@ -11,7 +11,7 @@ const route = useRoute();
 const userId = route.params.id;
 
 // Fetch Profile Data
-const { data: response, pending, error } = await useFetch(`/api/user/${userId}`);
+const { data: response, pending, error } = await useFetch(`/api/user/${userId}`, { lazy: true });
 
 // State lokal untuk Optimistic UI
 const followStats = ref({

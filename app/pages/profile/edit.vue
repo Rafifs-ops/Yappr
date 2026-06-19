@@ -9,7 +9,7 @@ definePageMeta({
     layout: 'default'
 });
 
-const { data: profile, pending, error } = await useFetch(`/api/user/${auth.session?.id}`);
+const { data: profile, pending, error } = await useFetch(`/api/user/${auth.session?.id}`, { lazy: true });
 
 const fileInput = ref(null);
 const photoPreview = ref(null);

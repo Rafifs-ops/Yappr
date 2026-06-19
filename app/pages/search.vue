@@ -11,10 +11,10 @@ useHead({
 })
 
 // Fetch profil user
-const { data: profiles, pending, error } = await useFetch('/api/user');
+const { data: profiles, pending, error } = await useFetch('/api/user', { lazy: true });
 
 // Fetch trending hashtags
-const { data: trendingHashtags, pending: pendingHashtags } = await useFetch('/api/hashtags/trending');
+const { data: trendingHashtags, pending: pendingHashtags } = await useFetch('/api/hashtags/trending', { lazy: true });
 
 const query = ref('');
 

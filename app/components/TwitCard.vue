@@ -1,25 +1,51 @@
-<script setup>
+<script setup lang="ts">
 import { formatDate } from '~/utils/formatDate';
 import DOMPurify from 'isomorphic-dompurify';
+
+interface User {
+    _id: string;
+    username: string;
+    photo: string;
+}
+
+interface Twit {
+    _id: string;
+    text: string;
+    image?: string;
+    video?: string;
+    likesCount: number;
+    commentCount: number;
+    repostCount: number;
+    isLiked?: boolean;
+    isReposted?: boolean;
+    createdAt: string;
+    hashtags?: string[];
+    user?: User;
+    SubTwit?: {
+        isSubTwit: boolean;
+        reference?: {
+            _id: string;
+            user?: User;
+        }
+    }
+}
 
 /**
  * A reusable component for displaying a single Twit, including its
  * content, media, and interactive action buttons.
  */
-const props = defineProps({
+const props = defineProps<{
     /** The individual twit object */
-    twit: {
-        type: Object,
-        required: true
-    },
+    twit: Twit;
     /** The ID of the currently logged in user (used to show/hide delete button) */
-    currentUserId: {
-        type: String,
-        default: null
-    }
-});
+    currentUserId?: string | null;
+}>();
 
-const emit = defineEmits(['toggleLike', 'toggleRepost', 'deleteTwit']);
+const emit = defineEmits<{
+    (e: 'toggleLike', id: string): void;
+    (e: 'toggleRepost', id: string): void;
+    (e: 'deleteTwit', id: string): void;
+}>();
 
 const shareTwit = async () => {
     // Buat URL absolut untuk twit ini

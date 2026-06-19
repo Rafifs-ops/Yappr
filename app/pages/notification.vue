@@ -12,7 +12,8 @@ definePageMeta({
 })
 
 const { data: notifications, refresh } = await useFetch('/api/notifications', {
-    key: 'notifications-data'
+    key: 'notifications-data',
+    lazy: true
 });
 
 const markAsRead = async (notification) => {

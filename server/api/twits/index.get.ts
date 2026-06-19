@@ -15,15 +15,13 @@ import { User } from "../../models/User.schema";
 export default defineEventHandler(async (event) => {
     let currentUser = null;
     try {
-        // Attempt to get the current user session
         currentUser = await session(event);
     } catch (e) {
-        // Silently ignore if not logged in (guest view)
+        // Guest view
     }
 
     try {
         if (!currentUser) {
-            // Contoh untuk Guest: Tampilkan twit publik tanpa status follow
             const publicUsers = await User.find({ isPrivate: { $ne: true } }).select('_id').lean();
             const publicUserIds = publicUsers.map(u => u._id);
 
@@ -42,80 +40,53 @@ export default defineEventHandler(async (event) => {
         const following = await Follow.find({ 
             follower: currentUser.id,
             $or: [{ status: 'accepted' }, { status: { $exists: false } }]
-        }).lean();
+        }).select('following').lean();
+        
         const followingIds = following.map(f => f.following);
+        followingIds.push(currentUser.id); // Also show own twits
 
-        const twitsFromFollowing = await Twit.find({ user: { $in: followingIds } })
+        // 1. Fetch recent twit IDs from following & self
+        const twitIdsResult = await Twit.find({ user: { $in: followingIds } })
+            .sort({ createdAt: -1 }).limit(15).select('_id').lean();
+
+        // 2. Fetch recent reposted twit IDs from following
+        const repostsResult = await Repost.find({ user: { $in: followingIds } })
+            .sort({ createdAt: -1 }).limit(15).select('twit').lean();
+
+        // 3. Fetch recent liked twit IDs from following
+        const likesResult = await Like.find({ user: { $in: followingIds } })
+            .sort({ createdAt: -1 }).limit(15).select('twit').lean();
+
+        // 4. Combine IDs
+        const combinedIds = Array.from(new Set([
+            ...twitIdsResult.map(t => t._id.toString()),
+            ...repostsResult.map(r => r.twit?.toString()).filter(Boolean),
+            ...likesResult.map(l => l.twit?.toString()).filter(Boolean)
+        ]));
+
+        // 5. Fetch fully populated twits, sorted & limited
+        const twits = await Twit.find({ _id: { $in: combinedIds } })
             .sort({ createdAt: -1 })
+            .limit(15)
             .populate('user', 'username photo')
             .populate({
                 path: 'SubTwit.reference',
                 populate: { path: 'user', select: 'username photo' }
             })
-            .limit(15)
             .lean();
 
-        const repostedTwitsfromFollowing = await Repost.find({ user: { $in: followingIds } })
-            .sort({ createdAt: -1 })
-            .populate('user', 'username photo')
-            .populate({
-                path: 'twit',
-                populate: [
-                    { path: 'user', select: 'username photo' },
-                    { path: 'SubTwit.reference', populate: { path: 'user', select: 'username photo' } }
-                ]
-            })
-            .limit(15)
-            .lean();
-
-        const LikedTwitsfromFollowing = await Like.find({ user: { $in: followingIds } })
-            .sort({ createdAt: -1 })
-            .populate('user', 'username photo')
-            .populate({
-                path: 'twit',
-                populate: [
-                    { path: 'user', select: 'username photo' },
-                    { path: 'SubTwit.reference', populate: { path: 'user', select: 'username photo' } }
-                ]
-            })
-            .limit(15)
-            .lean();
-
-        // Filter nilai null apabila parent twit terhapus
-        const repostedTwits = repostedTwitsfromFollowing
-            .filter(repost => repost.twit != null)
-            .map(repost => repost.twit);
-
-        const LikedTwits = LikedTwitsfromFollowing
-            .filter(like => like.twit != null)
-            .map(like => like.twit);
-
-        let allTwits = [...twitsFromFollowing, ...repostedTwits, ...LikedTwits];
-
-        // Hapus duplikasi berdasarkan ID
-        const uniqueTwitsMap = new Map();
-        for (const twit of allTwits) {
-            uniqueTwitsMap.set(twit._id.toString(), twit);
-        }
-        allTwits = Array.from(uniqueTwitsMap.values());
-
-        // Sorting aman di TypeScript
-        allTwits.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        // Potong jumlah hasil gabungan
-        const twits = allTwits.slice(0, 15);
-
+        // 6. Attach isLiked and isReposted for the current user
         const twitIds = twits.map(t => t._id);
 
         const userLikes = await Like.find({
             user: currentUser.id,
             twit: { $in: twitIds }
-        }).lean();
+        }).select('twit').lean();
 
         const userReposts = await Repost.find({
             user: currentUser.id,
             twit: { $in: twitIds }
-        }).lean();
+        }).select('twit').lean();
 
         const likedTwitIds = new Set(userLikes.map(like => like.twit.toString()));
         const repostedTwitIds = new Set(userReposts.map(repost => repost.twit.toString()));

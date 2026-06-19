@@ -7,7 +7,7 @@ definePageMeta({
 
 const auth = useAuth();
 
-const { data: response, pending, error } = await useFetch(`/api/user/${auth.session?.id}`);
+const { data: response, pending, error } = await useFetch(`/api/user/${auth.session?.id}`, { lazy: true });
 
 // State lokal untuk Optimistic UI
 const followStats = ref({
