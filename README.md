@@ -6,6 +6,41 @@ Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan ra
 
 ---
 
+## Fitur-fitur yang ada di aplikasi
+
+1. Registrasi Akun (dengan OTP)
+Pengguna dapat mendaftar akun baru dengan mengisi nama pengguna, email, kata sandi, bio, dan mengunggah foto profil. Pendaftaran ini diamankan dan diselesaikan dengan tahap verifikasi email menggunakan 6 angka kode OTP (One Time Password) agar pengguna bisa diarahkan ke halaman utama.
+2. Login dan Logout
+Fitur autentikasi yang memungkinkan pengguna untuk masuk ke dalam akun menggunakan email dan kata sandi yang divalidasi dengan aman, serta keluar dari akun (logout) yang secara otomatis akan menghapus sesi token dari peramban.
+3. Lupa Kata Sandi (Reset Password)
+Pengguna yang lupa kata sandi dapat mengatur ulang akses masuk mereka melalui halaman login. Proses ini juga dijamin keamanannya dengan meminta pengguna untuk memverifikasi kode OTP yang dikirimkan via email sebelum membuat kata sandi baru.
+4. Keamanan Sistem (Anti-CSRF & Rate Limiting)
+Aplikasi secara bawaan telah dilengkapi dengan perlindungan terhadap serangan web CSRF dan menerapkan pembatasan akses (rate limiting) menggunakan sistem keamanan bawaan framework untuk mencegah kelumpuhan sistem atau DDoS.
+5. Akun Privat (Private Account)
+Pengguna dapat mengubah status akunnya menjadi privat. Jika diaktifkan, cuitan pengguna tidak akan muncul di publik dan pengguna lain yang ingin mengikuti harus mengirimkan permintaan mengikuti (follow request) yang kemudian bisa disetujui atau ditolak.
+6. Pencarian Pengguna dan Hashtag
+Aplikasi menyediakan fitur bagi pengguna untuk menelusuri pengguna lain menggunakan kata kunci pencarian, serta dapat memfilter cuitan spesifik yang mengandung hashtag tertentu.
+7. Profil dan Pengaturan Profil
+Setiap pengguna memiliki halaman profil khusus yang menampilkan detail bio, daftar cuitan mereka sendiri, cuitan yang disukai, dan cuitan yang dibagikan ulang. Pengguna juga dapat mengubah dan memperbarui informasi profil mereka seperti nama, bio, atau mengganti foto profil dengan yang baru.
+8. Mengikuti dan Batal Mengikuti (Follow & Unfollow)
+Fitur untuk membangun relasi jaringan antar pengguna di mana mereka dapat mengikuti akun publik, mengirim permintaan mengikuti ke akun privat, dan kapan saja dapat membatalkan tindakan tersebut (unfollow) yang akan langsung mengubah metrik jumlah pengikut secara otomatis.
+9. Publikasi Cuitan (Twit) dan Penghapusan
+Pengguna dapat membuat postingan baru dengan menyertakan teks beserta lampiran media seperti gambar atau video yang akan disimpan ke penyimpanan pihak ketiga (Cloudinary). Pengguna juga memiliki opsi untuk menghapus cuitan tersebut dari platform.
+10. Beranda (Timeline) yang Terkurasi
+Halaman utama pengguna menampilkan cuitan harian yang dinamis dan bebas duplikasi. Cuitan yang muncul di beranda difilter secara spesifik untuk hanya menampilkan postingan dari akun yang mereka ikuti, beserta postingan yang disukai atau dibagikan ulang oleh teman mereka.
+11. Balasan Cuitan (SubTwit / Komentar)
+Pengguna dapat saling berinteraksi dengan membalas langsung cuitan pengguna lain atau cuitan miliknya sendiri sebagai bentuk komentar yang akan menambah statistik jumlah balasan pada cuitan induk.
+12. Suka (Like) dan Bagikan Ulang (Repost)
+Fitur interaksi instan di mana pengguna bisa menyukai atau membagikan ulang cuitan favorit mereka ke profil sendiri, yang akan seketika menambah metrik angka dan mengubah tampilan antarmuka. Tindakan ini juga bisa ditarik kembali (unlike/un-repost) sewaktu-waktu.
+13. Topik Hangat (Trending Hashtags)
+Aplikasi dapat mengumpulkan dan menampilkan daftar hashtag yang sedang tren saat ini sehingga pengguna dapat melihat topik apa saja yang paling banyak dibicarakan oleh komunitas.
+14. Notifikasi
+Sistem pemberitahuan terpusat yang memberitahukan peristiwa penting kepada pengguna, salah satunya ketika ada permintaan masuk untuk mengikuti akun. Status notifikasi juga dapat diperbarui, misalnya ketika sudah ditandai sebagai telah dibaca.
+15. Pesan Langsung (Realtime Chatting)
+Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spesifik. Pesan obrolan ini diterima dan dikirim secara langsung tanpa jeda (realtime) menggunakan koneksi WebSocket yang menampilkan riwayat obrolan terdahulu beserta foto pengirimnya.
+
+---
+
 ## Alur Fitur Private Account
 
 1. Di skema model User, ada field isPrivate dengan type data Boolean untuk menandai status akun
@@ -21,10 +56,11 @@ Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan ra
 ## Alur Authentikasi
 
 1. User Login, server akan memeriksa apakah email nya ada?, apakah emailnya sesuai format?. Jika ada dan sesuai, maka server kan mencari data(Doc) User ke database.
-2. Jika User ada dan email sudah terverifikasi, maka password dari input user akan dicompare dengan password di database menggunakan bycrpt. Jika true, maka server akan membuat token dengan payload userId dengan jsonwebtoken
-3. Setelah itu, token akan disimpan di cookie web client. Login berhasil dan Data user nanti akan disimpan di session bagian server
-4. Session server mendapatkan data User dengan cara mengambil token yang ada di cookie, lalu token tersebut akan digunakan untuk diverify sekaligus di decode untuk mendapatkan userId
-5. Lalu, Session akan mencari data(doc) user ke database dengan userId yang sudah didapat dari decode token. Data(doc) User akan dikembalikan sebagai response backend untuk dikirim ke frontend (client)
+2. Jika User ada dan email sudah terverifikasi, maka password dari input user akan dicompare dengan password di database menggunakan bycrpt. Jika true, maka server akan membuat access token dan refresh token dengan payload userId dengan jsonwebtoken
+3. Setelah itu, access dan refresh token akan disimpan di cookie web client. Login berhasil dan Data user nanti akan disimpan di session bagian server
+4. Session server mendapatkan data User dengan cara mengambil access token yang ada di cookie, lalu token tersebut akan digunakan untuk diverify sekaligus di decode untuk mendapatkan userId
+5. Refresh token berfungsi jika access token user sudah kadaluwarsa, maka server akan menggunakan refresh token untuk membuat access token yang baru. Sehingga user tidak perlu login ulang jika access token mereka sudah kadaluwarsa
+6. Lalu, Session akan mencari data(doc) user ke database dengan userId yang sudah didapat dari decode token. Data(doc) User akan dikembalikan sebagai response backend untuk dikirim ke frontend (client)
 
 ---
 
