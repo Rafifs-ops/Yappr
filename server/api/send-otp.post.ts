@@ -13,10 +13,10 @@ export default defineEventHandler(async (event) => {
     if (type === 'register') {
         const user = await User.findOne({ email });
         if (!user) {
-             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan. Silakan daftar terlebih dahulu.' });
+            throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan. Silakan daftar terlebih dahulu.' });
         }
         if (user.emailVerifiedAt) {
-             throw createError({ statusCode: 400, statusMessage: 'Email sudah terverifikasi' });
+            throw createError({ statusCode: 400, statusMessage: 'Email sudah terverifikasi' });
         }
     } else if (type === 'reset_password') {
         const user = await User.findOne({ email });
@@ -37,7 +37,9 @@ export default defineEventHandler(async (event) => {
 
     // Kirim email
     const transporter = nodemailer.createTransport({
-        service: 'gmail', // Bisa diganti sesuai kebutuhan, pastikan ENV dikonfigurasi
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
