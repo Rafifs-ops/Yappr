@@ -42,8 +42,6 @@ export default defineEventHandler(async (event) => {
         secure: false, // upgrade later with STARTTLS
         requireTLS: true,
         family: 4, // Force IPv4 karena server mungkin tidak support IPv6
-        connectionTimeout: 10000, // Timeout 10 detik
-        socketTimeout: 15000,     // Timeout koneksi 15 detik
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
