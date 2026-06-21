@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
     // Simpan ke database (replace if exists for the same email and type)
-    await Otp.findOneAndDelete({ email, type });
+    await Otp.deleteMany({ email, type });
     await Otp.create({ email, otp: otpCode, type, expiresAt });
 
     // Kirim email

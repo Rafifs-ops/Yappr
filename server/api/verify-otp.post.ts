@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (new Date() > otpDoc.expiresAt) {
-        await Otp.findByIdAndDelete(otpDoc._id);
+        await Otp.deleteMany({ email, type });
         throw createError({ statusCode: 400, statusMessage: 'OTP sudah kadaluwarsa' });
     }
 
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
         });
 
         // Hapus OTP setelah berhasil
-        await Otp.findByIdAndDelete(otpDoc._id);
+        await Otp.deleteMany({ email, type });
 
         return { status: 'Verifikasi berhasil dan login sukses' };
     } else if (type === 'reset_password') {
