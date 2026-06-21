@@ -21,19 +21,21 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event)
         const { file } = body
 
-        try {
-            // Proses upload ke Cloudinary
-            const result = await cloudinary.uploader.upload(file, {
-                folder: 'user_profile_photos_RTwit',
-                use_filename: true,
-            })
+        if (file) {
+            try {
+                // Proses upload ke Cloudinary
+                const result = await cloudinary.uploader.upload(file, {
+                    folder: 'user_profile_photos_RTwit',
+                    use_filename: true,
+                })
 
-            event.context.photo = result.secure_url
-        } catch (error) {
-            throw createError({
-                statusCode: 500,
-                statusMessage: 'Gagal upload ke Cloudinary',
-            })
+                event.context.photo = result.secure_url
+            } catch (error) {
+                throw createError({
+                    statusCode: 500,
+                    statusMessage: 'Gagal upload ke Cloudinary',
+                })
+            }
         }
     }
     // Jika path tidak cocok, middleware akan mengabaikan blok if di atas

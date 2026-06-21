@@ -38,8 +38,11 @@ export default defineEventHandler(async (event) => {
     // Kirim email
     const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false, // upgrade later with STARTTLS
+        requireTLS: true,
+        connectionTimeout: 10000, // Timeout 10 detik
+        socketTimeout: 15000,     // Timeout koneksi 15 detik
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
@@ -61,6 +64,7 @@ export default defineEventHandler(async (event) => {
         }
         return { status: 'OTP berhasil dikirim' };
     } catch (error) {
-        throw createError({ statusCode: 500, statusMessage: 'Gagal mengirim email OTP' });
+        console.error("Nodemailer error:", error);
+        throw createError({ statusCode: 500, statusMessage: 'Gagal mengirim email OTP: ' + (error instanceof Error ? error.message : 'Unknown error') });
     }
 });
