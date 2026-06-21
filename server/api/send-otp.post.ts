@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: type === 'register' ? 'Verifikasi Email RTwit' : 'Reset Password RTwit',
+        subject: type === 'register' ? 'Verifikasi Email Yappr' : 'Reset Password Yappr',
         text: `Kode OTP Anda adalah: ${otpCode}. Kode ini akan kadaluwarsa dalam 5 menit.`
     };
 
