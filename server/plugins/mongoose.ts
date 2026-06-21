@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+
 
 export default defineNitroPlugin(async () => {
+    dns.setServers(['1.1.1.1']);
     try {
         const uri = process.env.MONGODB_URI;
         if (!uri) {

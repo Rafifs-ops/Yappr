@@ -54,7 +54,6 @@ function toggleTabs(tab) {
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
             <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
-            LOADING PROFILE...
         </div>
 
         <div v-else-if="error || !auth.session?.id"
