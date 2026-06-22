@@ -4,7 +4,6 @@ import { User } from '../models/User.schema';
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
     const { email, type } = data;
-    const { sendMail } = useNodeMailer();
 
     if (!email || !type) {
         throw createError({ statusCode: 400, statusMessage: 'Email dan tipe (register/reset_password) wajib diisi' });
@@ -37,11 +36,30 @@ export default defineEventHandler(async (event) => {
 
     try {
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await sendMail({ subject: type === 'register' ? 'Verifikasi Email Yappr' : 'Reset Password Yappr', text: `Kode OTP Anda adalah: ${otpCode}. Kode ini akan kadaluwarsa dalam 5 menit.`, to: email });
+            await $fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': process.env.BREVO_API_KEY,
+                    'content-type': 'application/json'
+                },
+                body: {
+                    sender: { name: 'Yappr App', email: process.env.EMAIL_USER },
+                    to: [{ email: email }],
+                    subject: 'Kode Verifikasi Yappr Anda',
+                    htmlContent: `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <h2>Selamat Datang di Yappr!</h2>
+            <p>Kode OTP Anda adalah: <strong>${otpCode}</strong></p>
+            <p>Kode ini berlaku selama 5 menit.</p>
+          </div>
+        `
+                }
+            })
+            return { status: 'OTP berhasil dikirim' };
         } else {
             console.warn("EMAIL_USER atau EMAIL_PASS kosong di .env. OTP tidak dikirim, tetapi disimpan di database untuk testing: " + otpCode);
         }
-        return { status: 'OTP berhasil dikirim' };
     } catch (error) {
         console.error("Nodemailer error:", error);
         throw createError({ statusCode: 500, statusMessage: 'Gagal mengirim email OTP: ' + (error instanceof Error ? error.message : 'Unknown error') });

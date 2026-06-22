@@ -8,23 +8,12 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
     'nuxt-security',
-    'nuxt-nodemailer'
   ],
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
     useSecure: true,
-  },
-  nodemailer: {
-    from: '"Yappr" <finjoyfinancetracker@gmail.com>',
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
   },
   security: {
     requestSizeLimiter: {
