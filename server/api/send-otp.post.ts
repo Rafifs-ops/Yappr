@@ -1,6 +1,8 @@
 import { Otp } from '../models/Otp.schema';
 import { User } from '../models/User.schema';
 import nodemailer from 'nodemailer';
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
