@@ -1,6 +1,6 @@
 <script setup>
 import { useAuth } from '../stores/Auth';
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 const auth = useAuth();
 const { $csrfFetch } = useNuxtApp();
 const props = defineProps(['twitId', 'comments']);

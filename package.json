@@ -36,7 +36,6 @@
     "@iconify-json/streamline-ultimate": "^1.2.2",
     "@iconify-json/svg-spinners": "^1.2.4",
     "@types/dompurify": "^3.0.5",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/nodemailer": "^8.0.0"
+    "@types/jsonwebtoken": "^9.0.10"
   }
 }

@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     await Otp.create({ email, otp: otpCode, type, expiresAt });
 
     try {
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        if (process.env.EMAIL_USER && process.env.BREVO_API_KEY) {
             await $fetch('https://api.brevo.com/v3/smtp/email', {
                 method: 'POST',
                 headers: {
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
             console.warn("EMAIL_USER atau EMAIL_PASS kosong di .env. OTP tidak dikirim, tetapi disimpan di database untuk testing: " + otpCode);
         }
     } catch (error) {
-        console.error("Nodemailer error:", error);
+        console.error("brevo api error:", error);
         throw createError({ statusCode: 500, statusMessage: 'Gagal mengirim email OTP: ' + (error instanceof Error ? error.message : 'Unknown error') });
     }
 });

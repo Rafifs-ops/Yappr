@@ -2,7 +2,7 @@
 import { useAuth } from '~/stores/Auth';
 import { getIcon, getIconColor } from '~/utils/notifIcon';
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 
 const { $csrfFetch } = useNuxtApp();
 const auth = useAuth();
@@ -94,15 +94,18 @@ const handleRequest = async (notif, action) => {
                     </p>
 
                     <div v-if="notif.commentText && notif.type == 'comment'"
-                        class="text-xs text-purple-200 leading-relaxed font-mono mt-3" v-html="DOMPurify.sanitize(notif.commentText)">
+                        class="text-xs text-purple-200 leading-relaxed font-mono mt-3"
+                        v-html="DOMPurify.sanitize(notif.commentText)">
                     </div>
 
-                    <p class="text-md font-bold text-purple-400 leading-relaxed font-mono mt-4">Yappingan</p>
                     <div v-if="notif.type == 'repost' || notif.type == 'comment' || notif.type == 'like'"
                         class="border-2 border-purple-800/50/50 rounded-lg p-2 mt-2">
                         <ClientOnly>
                             <NuxtLink :to="`/twit/${notif.twitId}`" class="block mt-2">
-                                <p class="text-xs text-purple-200 leading-relaxed font-mono" v-html="DOMPurify.sanitize(notif.twitText)">
+                                <p class="text-md font-bold text-purple-400 leading-relaxed font-mono mt-4">Yappingan
+                                </p>
+                                <p class="text-xs text-purple-200 leading-relaxed font-mono"
+                                    v-html="DOMPurify.sanitize(notif.twitText)">
                                 </p>
                             </NuxtLink>
                         </ClientOnly>
