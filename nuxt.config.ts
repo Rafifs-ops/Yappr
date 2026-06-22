@@ -18,7 +18,7 @@ export default defineNuxtConfig({
   },
   nodemailer: {
     from: '"Yappr" <finjoyfinancetracker@gmail.com>',
-    host: 'smtp.mailtrap.io',
+    host: 'smtp.gmail.com',
     port: 465,
     secure: true,
     auth: {
