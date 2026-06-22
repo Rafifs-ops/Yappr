@@ -1,12 +1,10 @@
 import { Otp } from '../models/Otp.schema';
 import { User } from '../models/User.schema';
-import nodemailer from 'nodemailer';
-import dns from 'node:dns';
-dns.setDefaultResultOrder('ipv4first');
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
     const { email, type } = data;
+    const { sendMail } = useNodeMailer();
 
     if (!email || !type) {
         throw createError({ statusCode: 400, statusMessage: 'Email dan tipe (register/reset_password) wajib diisi' });
@@ -37,27 +35,9 @@ export default defineEventHandler(async (event) => {
     await Otp.deleteMany({ email, type });
     await Otp.create({ email, otp: otpCode, type, expiresAt });
 
-    // Kirim email
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    });
-
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: type === 'register' ? 'Verifikasi Email Yappr' : 'Reset Password Yappr',
-        text: `Kode OTP Anda adalah: ${otpCode}. Kode ini akan kadaluwarsa dalam 5 menit.`
-    };
-
     try {
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
+            await sendMail({ subject: type === 'register' ? 'Verifikasi Email Yappr' : 'Reset Password Yappr', text: `Kode OTP Anda adalah: ${otpCode}. Kode ini akan kadaluwarsa dalam 5 menit.`, to: email });
         } else {
             console.warn("EMAIL_USER atau EMAIL_PASS kosong di .env. OTP tidak dikirim, tetapi disimpan di database untuk testing: " + otpCode);
         }

@@ -24,7 +24,6 @@
     "isomorphic-dompurify": "^3.17.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.1",
-    "nodemailer": "^8.0.7",
     "nuxt": "^4.4.2",
     "nuxt-security": "^2.6.0",
     "tippy.js": "^6.3.7",
@@ -38,6 +37,8 @@
     "@iconify-json/svg-spinners": "^1.2.4",
     "@types/dompurify": "^3.0.5",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/nodemailer": "^8.0.0"
+    "@types/nodemailer": "^8.0.0",
+    "nodemailer": "^7.0.13",
+    "nuxt-nodemailer": "^1.1.4"
   }
 }
