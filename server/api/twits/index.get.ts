@@ -29,10 +29,12 @@ export default defineEventHandler(async (event) => {
             const publicUsers = await User.find({ isPrivate: { $ne: true } }).select('_id').lean();
             const publicUserIds = publicUsers.map(u => u._id);
 
-            const paginationDate = cursor ? new Date(cursor as string) : new Date();
             const query: any = { user: { $in: publicUserIds } };
-            if (cursor) {
-                query.createdAt = { $lt: paginationDate };
+            if (cursor && cursor !== 'undefined' && cursor !== 'null') {
+                const paginationDate = new Date(cursor as string);
+                if (!isNaN(paginationDate.getTime())) {
+                    query.createdAt = { $lt: paginationDate };
+                }
             }
 
             const publicTwits = await Twit.find(query)
@@ -55,23 +57,29 @@ export default defineEventHandler(async (event) => {
         const followingIds = following.map(f => f.following);
         followingIds.push(currentUser.id as any); // Also show own twits
 
-        const paginationDate = cursor ? new Date(cursor as string) : new Date();
+        let paginationDate = new Date();
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') {
+            const parsedDate = new Date(cursor as string);
+            if (!isNaN(parsedDate.getTime())) {
+                paginationDate = parsedDate;
+            }
+        }
 
         // 1. Fetch recent twit IDs from following & self
         const queryTwit: any = { user: { $in: followingIds } };
-        if (cursor) queryTwit.createdAt = { $lt: paginationDate };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryTwit.createdAt = { $lt: paginationDate };
         const twitIdsResult = await Twit.find(queryTwit)
             .sort({ createdAt: -1 }).limit(limit).select('_id').lean();
 
         // 2. Fetch recent reposted twit IDs from following
         const queryRepost: any = { user: { $in: followingIds } };
-        if (cursor) queryRepost.createdAt = { $lt: paginationDate };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryRepost.createdAt = { $lt: paginationDate };
         const repostsResult = await Repost.find(queryRepost)
             .sort({ createdAt: -1 }).limit(limit).select('twit').lean();
 
         // 3. Fetch recent liked twit IDs from following
         const queryLike: any = { user: { $in: followingIds } };
-        if (cursor) queryLike.createdAt = { $lt: paginationDate };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryLike.createdAt = { $lt: paginationDate };
         const likesResult = await Like.find(queryLike)
             .sort({ createdAt: -1 }).limit(limit).select('twit').lean();
 
