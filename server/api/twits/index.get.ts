@@ -4,7 +4,7 @@ import { Repost } from "../../models/Repost.schema";
 import { session } from "../../utils/session";
 import { Follow } from "../../models/Follow.schema";
 import { User } from "../../models/User.schema";
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 
 /**
  * GET /api/twits
@@ -88,7 +88,7 @@ export default defineEventHandler(async (event) => {
             ...twitIdsResult.map(t => t._id.toString()),
             ...repostsResult.map(r => r.twit?.toString()).filter(Boolean),
             ...likesResult.map(l => l.twit?.toString()).filter(Boolean)
-        ])).map(id => new mongoose.Types.ObjectId(id));
+        ])).map(id => new Types.ObjectId(id));
 
         // 5. Fetch using aggregation pipeline to avoid N+1 queries
         const queryCombined: any = { _id: { $in: combinedIds } };
@@ -109,7 +109,7 @@ export default defineEventHandler(async (event) => {
             {
                 $lookup: {
                     from: 'likes',
-                    let: { twitId: '$_id', userId: new mongoose.Types.ObjectId(currentUser.id) },
+                    let: { twitId: '$_id', userId: new Types.ObjectId(currentUser.id) },
                     pipeline: [
                         { $match: { $expr: { $and: [
                             { $eq: ['$twit', '$$twitId'] },
@@ -122,7 +122,7 @@ export default defineEventHandler(async (event) => {
             {
                 $lookup: {
                     from: 'reposts',
-                    let: { twitId: '$_id', userId: new mongoose.Types.ObjectId(currentUser.id) },
+                    let: { twitId: '$_id', userId: new Types.ObjectId(currentUser.id) },
                     pipeline: [
                         { $match: { $expr: { $and: [
                             { $eq: ['$twit', '$$twitId'] },
@@ -161,6 +161,10 @@ export default defineEventHandler(async (event) => {
         return twits;
 
     } catch (error: any) {
-        throw createError({ statusCode: 500, statusMessage: error.message || 'Internal Server Error' });
+        console.error("Index GET error:", error);
+        throw createError({ 
+            statusCode: 500, 
+            statusMessage: 'Error: ' + (error.stack || error.message) 
+        });
     }
 });
