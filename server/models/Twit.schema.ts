@@ -55,5 +55,6 @@ const twitSchema = new Schema<ITwit>({
 
 // Indexing hashtags for faster text search queries
 twitSchema.index({ hashtags: 1 });
+twitSchema.index({ user: 1, createdAt: -1 });
 
 export const Twit = model<ITwit>('Twit', twitSchema);

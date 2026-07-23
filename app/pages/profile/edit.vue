@@ -1,5 +1,6 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { onUnmounted } from 'vue';
 
 const auth = useAuth();
 const router = useRouter();
@@ -7,6 +8,12 @@ const { $csrfFetch } = useNuxtApp();
 
 definePageMeta({
     layout: 'default'
+});
+
+let redirectTimer;
+
+onUnmounted(() => {
+    if (redirectTimer) clearTimeout(redirectTimer);
 });
 
 const { data: profile, pending, error } = await useFetch(`/api/user/${auth.session?.id}`, { lazy: true });
@@ -95,7 +102,7 @@ async function handleUpdate() {
         };
 
         // Kembali ke halaman profil setelah 2 detik
-        setTimeout(() => {
+        redirectTimer = setTimeout(() => {
             router.push('/profile');
         }, 2000);
 

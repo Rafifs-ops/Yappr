@@ -6,4 +6,8 @@ const followSchema = new Schema({
     status: { type: String, enum: ['pending', 'accepted'], default: 'accepted' }
 }, { timestamps: true });
 
+followSchema.index({ follower: 1 });
+followSchema.index({ following: 1 });
+followSchema.index({ follower: 1, following: 1 }, { unique: true });
+
 export const Follow = model('Follow', followSchema);

@@ -5,4 +5,7 @@ const likeSchema = new Schema({
     twit: { type: Schema.Types.ObjectId, ref: 'Twit' }, // Twit yang di like
 }, { timestamps: true });
 
+likeSchema.index({ user: 1 });
+likeSchema.index({ twit: 1 });
+
 export const Like = model('Like', likeSchema);

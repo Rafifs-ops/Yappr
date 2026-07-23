@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
                 follower: currentUser.id,
                 $or: [{ status: 'accepted' }, { status: { $exists: false } }]
             }).lean();
-            followingIds = following.map(f => f.following.toString());
+            followingIds = following.map(f => f.following?.toString()).filter(id => id != null) as string[];
         }
 
         const filteredTwits = twits.filter((twit: any) => {
@@ -63,8 +63,8 @@ export default defineEventHandler(async (event) => {
         }).lean();
 
         // Ubah array likes dan reposts menjadi Set berisi ID string untuk pencarian instan (O(1))
-        const likedTwitIds = new Set(userLikes.map(like => like.twit.toString()));
-        const repostedTwitIds = new Set(userReposts.map(repost => repost.twit.toString()));
+        const likedTwitIds = new Set(userLikes.map(like => like.twit?.toString()));
+        const repostedTwitIds = new Set(userReposts.map(repost => repost.twit?.toString()));
 
         // Petakan status isLiked dan isReposted ke masing-masing twit
         const twitsWithLikeStatus = filteredTwits.map((twit: any) => {

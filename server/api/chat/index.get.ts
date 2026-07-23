@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
         // Looping semua chat di mana user adalah anggota
         for (const mc of memberChats) {
-            const chat = mc.conversationId; // mengambil chat
+            const chat = mc.conversationId as any; // mengambil chat
             if (!chat) continue;
 
             // mengambil anggota lain dari chat
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
 
             // jika anggota lain ada
             if (otherMembers.length > 0) {
-                const otherUser = otherMembers[0].userId as any;
+                const otherUser = otherMembers[0]?.userId as any;
                 // jika nama chat tidak ada atau "Direct Message" maka akan diisi dengan nama anggota lain
                 if (!chatName || chatName === 'Direct Message') {
                     chatName = otherUser.username;

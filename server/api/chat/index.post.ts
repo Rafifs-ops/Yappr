@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
         // Check if chat already exists between these two users
         // Kita cek semua chat yang dimiliki auth, lalu kita cek apakah targetUserId ada di salah satu chat tersebut.
         const authUserChats = await MemberChat.find({ userId: auth.id });
-        const chatIds = authUserChats.map(mc => mc.conversationId);
+        const chatIds = authUserChats.map(mc => mc.conversationId).filter(id => id != null);
 
         const existingChat = await MemberChat.findOne({
             conversationId: { $in: chatIds },
