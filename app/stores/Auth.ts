@@ -10,7 +10,8 @@ export const useAuth = defineStore("auth", () => {
     const fetchSession = async () => {
         try {
             const data = await $fetch('/api/auth/session', {
-                headers
+                headers,
+                credentials: 'include'
             })
             session.value = data as any // Menyimpan data auth di variable session client
         } catch (e) {

@@ -17,6 +17,7 @@ export const session = async (event: any) => {
     }
 
     if (!token && !refreshTokenCookie) {
+        console.error('Session Error: No token and no refresh token cookie');
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
 
@@ -29,6 +30,7 @@ export const session = async (event: any) => {
             if (error.name === 'TokenExpiredError') {
                 decodedToken = null; // Let it fallback to refresh token
             } else {
+                console.error('Session Error: Token invalid', error);
                 throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
             }
         }
@@ -39,7 +41,12 @@ export const session = async (event: any) => {
             const decodedRefresh = jwt.verify(refreshTokenCookie, secretAuthKey as string) as any;
             const user = await User.findById(decodedRefresh.userId);
             
-            if (!user || user.refreshToken !== refreshTokenCookie) {
+            if (!user) {
+                console.error('Session Error: User not found for refresh token');
+                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+            }
+            if (user.refreshToken !== refreshTokenCookie) {
+                console.error('Session Error: Refresh token mismatch. DB:', user.refreshToken, 'Cookie:', refreshTokenCookie);
                 throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
             }
 
@@ -56,11 +63,13 @@ export const session = async (event: any) => {
 
             decodedToken = payload;
         } catch (error) {
+            console.error('Session Error: Refresh token verification failed', error);
             throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
         }
     }
 
     if (!decodedToken) {
+        console.error('Session Error: No decoded token available');
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
 
