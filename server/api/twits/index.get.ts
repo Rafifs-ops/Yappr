@@ -4,18 +4,16 @@ import { Repost } from "../../models/Repost.schema";
 import { session } from "../../utils/session";
 import { Follow } from "../../models/Follow.schema";
 import { User } from "../../models/User.schema";
-import { Types } from 'mongoose';
 
 /**
  * GET /api/twits
  * Fetches a list of twits, sorted by the newest first.
- * If a user is logged in, it also appends boolean flags `isLiked` and `isReposted`
- * indicating whether the current user has interacted with each twit.
+ * Solves N+1 query problem by batch-fetching relations.
  */
 export default defineEventHandler(async (event) => {
     const queryParams = getQuery(event);
     const cursor = queryParams.cursor;
-    const limit = Math.min(parseInt(queryParams.limit as string) || 10, 50); // Validasi Limit (Max 50)
+    const limit = Math.min(parseInt(queryParams.limit as string) || 10, 50);
     
     let currentUser = null;
     try {
@@ -25,16 +23,21 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
+        let paginationDate = new Date();
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') {
+            const parsedDate = new Date(cursor as string);
+            if (!isNaN(parsedDate.getTime())) {
+                paginationDate = parsedDate;
+            }
+        }
+
         if (!currentUser) {
             const publicUsers = await User.find({ isPrivate: { $ne: true } }).select('_id').lean();
             const publicUserIds = publicUsers.map(u => u._id);
 
             const query: any = { user: { $in: publicUserIds } };
             if (cursor && cursor !== 'undefined' && cursor !== 'null') {
-                const paginationDate = new Date(cursor as string);
-                if (!isNaN(paginationDate.getTime())) {
-                    query.createdAt = { $lt: paginationDate };
-                }
+                query.createdAt = { $lt: paginationDate };
             }
 
             const publicTwits = await Twit.find(query)
@@ -55,110 +58,76 @@ export default defineEventHandler(async (event) => {
         }).select('following').lean();
 
         const followingIds = following.map(f => f.following);
-        followingIds.push(currentUser.id as any); // Also show own twits
+        followingIds.push(currentUser.id as any);
 
-        let paginationDate = new Date();
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') {
-            const parsedDate = new Date(cursor as string);
-            if (!isNaN(parsedDate.getTime())) {
-                paginationDate = parsedDate;
+        const queryTwit: any = { user: { $in: followingIds } };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryTwit.createdAt = { $lt: paginationDate };
+        
+        const twitIdsResult = await Twit.find(queryTwit)
+            .sort({ createdAt: -1 }).limit(limit).select('_id createdAt').lean();
+
+        const queryRepost: any = { user: { $in: followingIds } };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryRepost.createdAt = { $lt: paginationDate };
+        
+        const repostsResult = await Repost.find(queryRepost)
+            .sort({ createdAt: -1 }).limit(limit).select('twit createdAt').lean();
+
+        const queryLike: any = { user: { $in: followingIds } };
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryLike.createdAt = { $lt: paginationDate };
+        
+        const likesResult = await Like.find(queryLike)
+            .sort({ createdAt: -1 }).limit(limit).select('twit createdAt').lean();
+
+        // Gabungkan semua interaksi, urutkan berdasarkan waktu kejadian
+        const combined = [
+            ...twitIdsResult.map(t => ({ id: t._id?.toString(), date: t.createdAt })),
+            ...repostsResult.map(r => ({ id: r.twit?.toString(), date: r.createdAt })),
+            ...likesResult.map(l => ({ id: l.twit?.toString(), date: l.createdAt }))
+        ].filter(item => item.id);
+
+        combined.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        // Ambil unik top IDs
+        const topIds: string[] = [];
+        const seen = new Set();
+        for (const item of combined) {
+            if (!seen.has(item.id)) {
+                seen.add(item.id);
+                topIds.push(item.id as string);
+                if (topIds.length >= limit) break;
             }
         }
 
-        // 1. Fetch recent twit IDs from following & self
-        const queryTwit: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryTwit.createdAt = { $lt: paginationDate };
-        const twitIdsResult = await Twit.find(queryTwit)
-            .sort({ createdAt: -1 }).limit(limit).select('_id').lean();
+        if (topIds.length === 0) return [];
 
-        // 2. Fetch recent reposted twit IDs from following
-        const queryRepost: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryRepost.createdAt = { $lt: paginationDate };
-        const repostsResult = await Repost.find(queryRepost)
-            .sort({ createdAt: -1 }).limit(limit).select('twit').lean();
+        // 5. Fetch twit records (tanpa N+1 queries untuk user)
+        const finalTwits = await Twit.find({ _id: { $in: topIds } })
+            .populate('user', 'username photo')
+            .populate({
+                path: 'SubTwit.reference',
+                populate: { path: 'user', select: 'username photo' }
+            })
+            .lean();
 
-        // 3. Fetch recent liked twit IDs from following
-        const queryLike: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryLike.createdAt = { $lt: paginationDate };
-        const likesResult = await Like.find(queryLike)
-            .sort({ createdAt: -1 }).limit(limit).select('twit').lean();
+        // 6. Fetch interaksi user saat ini terhadap kumpulan twit tersebut
+        const myLikes = await Like.find({ user: currentUser.id, twit: { $in: topIds } }).select('twit').lean();
+        const myReposts = await Repost.find({ user: currentUser.id, twit: { $in: topIds } }).select('twit').lean();
 
-        // 4. Combine IDs
-        const combinedIds = Array.from(new Set([
-            ...twitIdsResult.map(t => t._id.toString()),
-            ...repostsResult.map(r => r.twit?.toString()).filter(Boolean),
-            ...likesResult.map(l => l.twit?.toString()).filter(Boolean)
-        ])).map(id => new Types.ObjectId(id));
+        const likedSet = new Set(myLikes.map(l => l.twit?.toString()));
+        const repostedSet = new Set(myReposts.map(r => r.twit?.toString()));
 
-        // 5. Fetch using aggregation pipeline to avoid N+1 queries
-        const queryCombined: any = { _id: { $in: combinedIds } };
+        // 7. Mapping hasil untuk menjaga urutan waktu asli
+        const result = topIds.map(id => {
+            const twit = finalTwits.find(t => t._id?.toString() === id);
+            if (!twit) return null;
+            return {
+                ...twit,
+                isLiked: likedSet.has(id),
+                isReposted: repostedSet.has(id)
+            };
+        }).filter(Boolean);
 
-        const twitsAgg = await Twit.aggregate([
-            { $match: queryCombined },
-            { $sort: { createdAt: -1 } },
-            { $limit: limit },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'user',
-                    foreignField: '_id',
-                    as: 'user'
-                }
-            },
-            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: 'likes',
-                    let: { twitId: '$_id', userId: new Types.ObjectId(currentUser.id) },
-                    pipeline: [
-                        { $match: { $expr: { $and: [
-                            { $eq: ['$twit', '$$twitId'] },
-                            { $eq: ['$user', '$$userId'] }
-                        ] } } }
-                    ],
-                    as: 'userLikes'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'reposts',
-                    let: { twitId: '$_id', userId: new Types.ObjectId(currentUser.id) },
-                    pipeline: [
-                        { $match: { $expr: { $and: [
-                            { $eq: ['$twit', '$$twitId'] },
-                            { $eq: ['$user', '$$userId'] }
-                        ] } } }
-                    ],
-                    as: 'userReposts'
-                }
-            },
-            {
-                $addFields: {
-                    isLiked: { $gt: [{ $size: '$userLikes' }, 0] },
-                    isReposted: { $gt: [{ $size: '$userReposts' }, 0] },
-                    // Make user consistent with populate output
-                    user: {
-                        _id: '$user._id',
-                        username: '$user.username',
-                        photo: '$user.photo'
-                    }
-                }
-            },
-            {
-                $project: {
-                    userLikes: 0,
-                    userReposts: 0
-                }
-            }
-        ]);
-
-        // 6. Deep populate SubTwit reference
-        const twits = await Twit.populate(twitsAgg, {
-            path: 'SubTwit.reference',
-            populate: { path: 'user', select: 'username photo' }
-        });
-
-        return twits;
+        return result;
 
     } catch (error: any) {
         console.error("Index GET error:", error);
