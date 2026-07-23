@@ -2,11 +2,11 @@ import { useAuth } from '~/stores/Auth';
 
 export default defineNuxtRouteMiddleware(async (to) => {
     const auth = useAuth();
-    const token = useCookie('auth_token');
     const publicPages = ['/auth/login', '/auth/register', '/auth/reset-password'];
     const isPublicPages = publicPages.includes(to.path);
 
-    if (!auth.session && token.value) {
+    // Selalu coba ambil session jika null, karena cookie httpOnly tidak bisa dibaca di client-side
+    if (!auth.session) {
         await auth.fetchSession();
     }
 
