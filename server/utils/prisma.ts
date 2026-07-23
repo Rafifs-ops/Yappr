@@ -1,11 +1,18 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
+import { createClient } from '@libsql/client'
+import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
-const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClient | undefined;
-};
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+const config = useRuntimeConfig()
 
-if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = prisma;
-}
+// Inisialisasi koneksi libSQL (Turso)
+const libsql = createClient({
+    url: config.tursoDatabaseUrl,
+    authToken: config.tursoAuthToken,
+})
+
+// Pasang adapter ke Prisma
+const adapter = new PrismaLibSQL(libsql)
+
+// Export instance Prisma agar bisa digunakan di seluruh file API Nuxt
+export const prisma = new PrismaClient({ adapter })
