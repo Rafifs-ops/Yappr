@@ -57,7 +57,7 @@ const fetchMorePosts = async () => {
     loadingMore.value = true;
     try {
         const lastTwit = twits.value[twits.value.length - 1];
-        const cursor = lastTwit._id;
+        const cursor = lastTwit.createdAt;
         
         const newTwits = await $fetch(getEndpoint(cursor));
         

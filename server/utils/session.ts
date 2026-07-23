@@ -50,12 +50,23 @@ export const session = async (event: any) => {
                 throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
             }
 
-            // Issue new access token
+            // Issue new access token and rotate refresh token
             const payload = { userId: user._id.toString() };
             token = jwt.sign(payload, secretAuthKey as string, { expiresIn: '15m' });
+            const newRefreshToken = jwt.sign(payload, secretAuthKey as string, { expiresIn: '7d' });
+            
+            user.refreshToken = newRefreshToken;
+            await user.save();
             
             setCookie(event, 'auth_token', token, {
                 maxAge: 60 * 15,  // 15 menit
+                httpOnly: true,
+                secure: true,
+                path: '/',
+            });
+
+            setCookie(event, 'refresh_token', newRefreshToken, {
+                maxAge: 60 * 60 * 24 * 7,  // 7 hari
                 httpOnly: true,
                 secure: true,
                 path: '/',

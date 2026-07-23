@@ -42,10 +42,11 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Jika semua user dengan username/email ini belum terverifikasi, kita bisa menghapusnya
-        // Ini memungkinkan pengguna yang sebelumnya gagal OTP untuk mencoba mendaftar kembali
-        const unverifiedIds = existingUsers.map(u => u._id);
-        await User.deleteMany({ _id: { $in: unverifiedIds } });
+        // Jika semua user dengan username/email ini belum terverifikasi, jangan hapus user tersebut
+        // Ini menghindari celah keamanan (menghapus user yang mungkin asli sedang proses daftar).
+        // Kita hanya membersihkan OTP lama jika ada (di logic OTP, bukan di sini)
+        // Jika belum diverifikasi, minta user selesaikan verifikasi
+        throw createError({ statusCode: 409, statusMessage: 'Akun dengan email atau username ini sudah terdaftar tapi belum diverifikasi. Silakan minta ulang OTP atau login.' });
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10); // hashing password dengan 10 salt

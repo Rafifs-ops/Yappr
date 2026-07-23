@@ -2,6 +2,8 @@ import { Otp } from '../models/Otp.schema';
 import { User } from '../models/User.schema';
 import nodemailer from 'nodemailer';
 
+import crypto from 'crypto';
+
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
     const { email, type } = data;
@@ -31,9 +33,12 @@ export default defineEventHandler(async (event) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
+    // Hash OTP
+    const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex');
+
     // Simpan ke database (replace if exists for the same email and type)
     await Otp.deleteMany({ email, type });
-    await Otp.create({ email, otp: otpCode, type, expiresAt });
+    await Otp.create({ email, otp: hashedOtp, type, expiresAt });
 
     try {
         const config = useRuntimeConfig();

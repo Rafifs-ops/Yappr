@@ -72,20 +72,49 @@ export default defineEventHandler(async (event) => {
 
         // Membersihkan tag HTML dari tiptap
         const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+        const MAX_TWIT_LENGTH = 280;
 
-        const mentionedUsernames = text.match(/@([a-zA-Z0-9_]+)/g)?.map(m => m.substring(1)) || [];
+        // Tolak jika teks kosong
+        if (!plainText) {
+            throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
+        }
+
+        if (plainText.length > MAX_TWIT_LENGTH) {
+            throw createError({ 
+                statusCode: 400, 
+                statusMessage: `Twit terlalu panjang. Maksimal ${MAX_TWIT_LENGTH} karakter.` 
+            });
+        }
+
+        const MAX_MENTIONS = 5;
+        const MAX_MENTION_LENGTH = 20;
+
+        const mentionedUsernames = text.match(new RegExp(`@([a-zA-Z0-9_]{1,${MAX_MENTION_LENGTH}})`, 'g'))
+            ?.map(m => m.substring(1))
+            .slice(0, MAX_MENTIONS) || [];
+            
         let mentionIds: string[] = [];
         let taggedUsers: any[] = [];
+
+        // Validasi jumlah dan panjang mention
+        if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).length > MAX_MENTIONS) {
+            throw createError({ 
+                statusCode: 400, 
+                statusMessage: `Maksimal ${MAX_MENTIONS} mention per twit` 
+            });
+        }
+
+        if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).some(m => m.length - 1 > MAX_MENTION_LENGTH)) {
+             throw createError({ 
+                statusCode: 400, 
+                statusMessage: `Username mention terlalu panjang. Maksimal ${MAX_MENTION_LENGTH} karakter.` 
+            });
+        }
 
         // Check user if mentioned
         if (mentionedUsernames.length > 0) {
             taggedUsers = await User.find({ username: { $in: mentionedUsernames } });
             mentionIds = taggedUsers.map(user => user._id.toString());
-        }
-
-        // Tolak jika teks kosong
-        if (!plainText) {
-            throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
         }
 
         let imageUrl = '';

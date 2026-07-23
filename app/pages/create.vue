@@ -30,20 +30,26 @@ function onFileChange(e) {
     } else if (file.type.startsWith('video/')) {
         const videoElement = document.createElement('video');
         videoElement.preload = 'metadata';
+        
+        const videoUrl = URL.createObjectURL(file);
 
         videoElement.onloadedmetadata = function () {
             // Cek jika durasi lebih dari 60 detik
             if (videoElement.duration > 60) {
                 alert('Durasi video terlalu panjang! Maksimal 1 menit (60 detik).');
                 if (fileInput.value) fileInput.value.value = '';
-                URL.revokeObjectURL(videoElement.src);
+                URL.revokeObjectURL(videoUrl);
                 return;
             }
 
             videoFile.value = file;
-            videoPreview.value = URL.createObjectURL(file); // Preview ringan
+            videoPreview.value = videoUrl; // Preview ringan
         }
-        videoElement.src = URL.createObjectURL(file);
+        videoElement.src = videoUrl;
+        
+        videoElement.addEventListener('error', () => {
+            URL.revokeObjectURL(videoUrl);
+        });
     } else {
         alert('Tolong pilih file gambar atau video');
         return;
@@ -101,7 +107,14 @@ async function handlePost() {
 
         navigateTo('/profile');
     } catch (err) {
-        alert(err.statusMessage || 'An error occurred');
+        const errorMap = {
+            400: 'Data tidak valid. Periksa kembali isi twit Anda.',
+            401: 'Anda harus login terlebih dahulu.',
+            413: 'File terlalu besar. Maksimal 50MB untuk image, 100MB untuk video.',
+            500: 'Server sedang bermasalah. Coba lagi nanti.'
+        };
+        const message = errorMap[err.statusCode] || err.statusMessage || 'Terjadi kesalahan';
+        alert(message);
     } finally {
         isUploading.value = false;
     }

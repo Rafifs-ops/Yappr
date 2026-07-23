@@ -1,10 +1,12 @@
 import { Message } from '../models/Message.schema';
 
-// Peer adalah pihak yang terhubung ke websocket
+// Menyimpan daftar koneksi aktif untuk heartbeat/cleanup jika perlu
+const activeConnections = new Set<any>();
 
 export default defineWebSocketHandler({
     open(peer) {
         console.log('[WS] Koneksi baru:', peer.id);
+        activeConnections.add(peer);
     },
 
     async message(peer, message) {
@@ -45,7 +47,29 @@ export default defineWebSocketHandler({
         }
     },
 
+    error(peer, error) {
+        console.error(`[WS] WebSocket error for peer ${peer.id}:`, error);
+        // We do not need to explicitly close it, the framework handles it, but we can clean up
+        activeConnections.delete(peer);
+    },
+
     close(peer) {
         console.log('[WS] Koneksi ditutup:', peer.id);
+        activeConnections.delete(peer);
     }
 });
+
+// Implementasi heartbeat (ping) sederhana untuk membersihkan koneksi mati
+setInterval(() => {
+    activeConnections.forEach((peer: any) => {
+        if (peer.readyState === 3 /* CLOSED */) {
+            activeConnections.delete(peer);
+        } else {
+            try {
+                peer.send('ping'); // Atau bisa peer.ping() jika didukung oleh adapter WS nuxt
+            } catch (e) {
+                activeConnections.delete(peer);
+            }
+        }
+    });
+}, 30000);

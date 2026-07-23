@@ -1,6 +1,7 @@
 import { Otp } from '../models/Otp.schema';
 import { User } from '../models/User.schema';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
@@ -10,7 +11,8 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Data belum lengkap' });
     }
 
-    const otpDoc = await Otp.findOne({ email, otp, type });
+    const hashedInput = crypto.createHash('sha256').update(otp).digest('hex');
+    const otpDoc = await Otp.findOne({ email, otp: hashedInput, type });
 
     if (!otpDoc) {
         throw createError({ statusCode: 400, statusMessage: 'OTP tidak valid atau salah' });
