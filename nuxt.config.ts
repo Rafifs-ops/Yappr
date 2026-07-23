@@ -9,6 +9,13 @@ export default defineNuxtConfig({
     '@nuxtjs/cloudinary',
     'nuxt-security',
   ],
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/images/logo-yappr.png' }
+      ]
+    }
+  },
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI,
     googleClientId: process.env.GOOGLE_CLIENT_ID,

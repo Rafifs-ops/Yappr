@@ -1,13 +1,11 @@
 import { defineStore } from 'pinia';
 
 export const useAuth = defineStore("auth", () => {
-    const { $csrfFetch } = useNuxtApp();
     const session = ref(null) // Membuat variable session
-
-    const headers = import.meta.server ? useRequestHeaders(['cookie']) as Record<string, string> : {}
 
     // Mengambil data auth di server
     const fetchSession = async () => {
+        const headers = import.meta.server ? useRequestHeaders(['cookie']) as Record<string, string> : {}
         try {
             const data = await $fetch('/api/auth/session', {
                 headers,
@@ -21,6 +19,7 @@ export const useAuth = defineStore("auth", () => {
 
     // Fungsi logout
     const signOut = async () => {
+        const { $csrfFetch } = useNuxtApp();
         await $csrfFetch('/api/auth/logout', { method: 'POST' })
         session.value = null
         await navigateTo('/auth/login')
