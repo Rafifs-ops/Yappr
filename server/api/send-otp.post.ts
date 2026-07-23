@@ -1,5 +1,6 @@
 import { Otp } from '../models/Otp.schema';
 import { User } from '../models/User.schema';
+import nodemailer from 'nodemailer';
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
@@ -36,33 +37,36 @@ export default defineEventHandler(async (event) => {
 
     try {
         const config = useRuntimeConfig();
-        if (config.emailUser && config.brevoApiKey) {
-            await $fetch('https://api.brevo.com/v3/smtp/email', {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'api-key': config.brevoApiKey,
-                    'content-type': 'application/json'
-                },
-                body: {
-                    sender: { name: 'Yappr App', email: config.emailUser },
-                    to: [{ email: email }],
-                    subject: 'Kode Verifikasi Yappr Anda',
-                    htmlContent: `
+        if (config.emailUser && config.emailPass) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: config.emailUser,
+                    pass: config.emailPass
+                }
+            });
+
+            const mailOptions = {
+                from: `"Yappr App" <${config.emailUser}>`,
+                to: email,
+                subject: 'Kode Verifikasi Yappr Anda',
+                html: `
           <div style="font-family: sans-serif; padding: 20px;">
             <h2>Selamat Datang di Yappr!</h2>
             <p>Kode OTP Anda adalah: <strong>${otpCode}</strong></p>
             <p>Kode ini berlaku selama 5 menit.</p>
           </div>
         `
-                }
-            })
+            };
+
+            await transporter.sendMail(mailOptions);
             return { status: 'OTP berhasil dikirim' };
         } else {
             console.warn("EMAIL_USER atau EMAIL_PASS kosong di .env. OTP tidak dikirim, tetapi disimpan di database untuk testing: " + otpCode);
+            return { status: 'OTP berhasil dibuat untuk testing' };
         }
     } catch (error) {
-        console.error("brevo api error:", error);
+        console.error("nodemailer error:", error);
         throw createError({ statusCode: 500, statusMessage: 'Gagal mengirim email OTP: ' + (error instanceof Error ? error.message : 'Unknown error') });
     }
 });

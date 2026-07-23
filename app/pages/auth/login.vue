@@ -30,6 +30,8 @@ const login = async () => {
         router.push('/')
     } catch (e) {
         alert(e.statusMessage || "Terjadi kesalahan saat login");
+    } finally {
+        isLoading.value = false;
     }
 }
 </script>

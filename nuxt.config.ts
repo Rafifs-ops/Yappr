@@ -21,7 +21,6 @@ export default defineNuxtConfig({
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS,
-    brevoApiKey: process.env.BREVO_API_KEY,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
