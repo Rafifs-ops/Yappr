@@ -1,39 +1,46 @@
-import { Follow } from "../../models/Follow.schema";
-import { Notification } from "../../models/Notification.schema";
-import { User } from "../../models/User.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
         const { follower, following } = await readBody(event);
 
-        // Update the follow status to 'accepted'
-        const follow = await Follow.findOneAndUpdate(
-            { follower, following, status: 'pending' },
-            { status: 'accepted' },
-            { new: true }
-        );
+        const followRecord = await prisma.follow.findFirst({
+            where: { followerId: follower, followingId: following, status: 'pending' }
+        });
 
-        if (!follow) {
+        if (!followRecord) {
             throw createError({ statusCode: 404, statusMessage: 'Follow request not found' });
         }
 
-        // Increment follower/following counts
-        await User.findByIdAndUpdate(follower, { $inc: { following: 1 } });
-        await User.findByIdAndUpdate(following, { $inc: { followers: 1 } });
-
-        // Update notification to read or delete it
-        await Notification.findOneAndDelete({
-            user: following,
-            sender: follower,
-            type: 'follow_request'
+        await prisma.follow.update({
+            where: { id: followRecord.id },
+            data: { status: 'accepted' }
         });
 
-        // Create accepted notification
-        await Notification.create({
-            user: follower,
-            sender: following,
-            type: 'follow_accept',
-            message: 'telah menyetujui permintaan mengikuti Anda'
+        await prisma.user.update({
+            where: { id: follower },
+            data: { following: { increment: 1 } }
+        });
+        await prisma.user.update({
+            where: { id: following },
+            data: { followers: { increment: 1 } }
+        });
+
+        await prisma.notification.deleteMany({
+            where: {
+                userId: following,
+                senderId: follower,
+                type: 'follow_request'
+            }
+        });
+
+        await prisma.notification.create({
+            data: {
+                userId: follower,
+                senderId: following,
+                type: 'follow_accept',
+                message: 'telah menyetujui permintaan mengikuti Anda'
+            }
         });
 
         return {

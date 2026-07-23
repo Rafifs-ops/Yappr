@@ -1,26 +1,27 @@
-import { Follow } from "../../models/Follow.schema";
-import { Notification } from "../../models/Notification.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
         const { follower, following } = await readBody(event);
 
-        // Delete the pending follow request
-        const follow = await Follow.findOneAndDelete({ 
-            follower, 
-            following, 
-            status: 'pending' 
+        const followRecord = await prisma.follow.findFirst({
+            where: { followerId: follower, followingId: following, status: 'pending' }
         });
 
-        if (!follow) {
+        if (!followRecord) {
             throw createError({ statusCode: 404, statusMessage: 'Follow request not found' });
         }
 
-        // Delete the notification
-        await Notification.findOneAndDelete({
-            user: following,
-            sender: follower,
-            type: 'follow_request'
+        await prisma.follow.delete({
+            where: { id: followRecord.id }
+        });
+
+        await prisma.notification.deleteMany({
+            where: {
+                userId: following,
+                senderId: follower,
+                type: 'follow_request'
+            }
         });
 
         return {

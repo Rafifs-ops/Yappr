@@ -1,8 +1,5 @@
-import { User } from '../../models/User.schema';
-import { Twit } from '../../models/Twit.schema';
-import { Follow } from '../../models/Follow.schema';
+import { prisma } from '../../utils/prisma';
 import { session } from "../../utils/session";
-
 
 export default defineEventHandler(async (event) => {
     try {
@@ -11,17 +8,49 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'User ID is required' });
         }
 
-        // Ambil data User dari MongoDB (tanpa password)
-        const userDb = await User.findById(id).select('-password');
+        const userDb = await prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                username: true,
+                photo: true,
+                email: true,
+                bio: true,
+                emailVerifiedAt: true,
+                followers: true,
+                following: true,
+                isPrivate: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
 
         if (!userDb) {
             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
         }
 
-        // Ambil Tweet milik user ini (diurutkan dari yang terbaru)
-        const userTweets = await Twit.find({ user: id })
-            .sort({ createdAt: -1 })
-            .populate('user', 'username email bio');
+        const userTweetsRaw = await prisma.twit.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                        bio: true,
+                        photo: true,
+                        isPrivate: true
+                    }
+                }
+            }
+        });
+
+        const userTweets = userTweetsRaw.map((t: any) => ({
+            ...t,
+            _id: t.id,
+            user: { ...t.user, _id: t.user.id }
+        }));
 
         let currentUser = null;
         try {
@@ -30,37 +59,34 @@ export default defineEventHandler(async (event) => {
             // Abaikan jika user belum login
         }
 
-        // Jika user belum login, asumsikan belum ada yang difollow
+        const formattedUserDb = { ...userDb, _id: userDb.id };
+
         if (!currentUser) {
             return {
-                user: userDb,
-                tweets: userDb.isPrivate ? [] : (userTweets || []),
+                user: formattedUserDb,
+                tweets: userDb.isPrivate ? [] : userTweets,
                 isFollowed: false,
                 followStatus: null
             };
         }
 
-        // Ambil ID twit
-        const userId = userDb._id;
+        const userFollow = await prisma.follow.findFirst({
+            where: {
+                followerId: currentUser.id,
+                followingId: id
+            }
+        });
 
-        // Cari Follow milik user INI yang berkaitan dengan twit ini
-        const userFollow = await Follow.findOne({
-            follower: currentUser.id,
-            following: userId
-        }).lean();
-
-        // Cek apakah user sudah follow user tersebut
-        const isFollowed = userFollow && (!userFollow.status || userFollow.status === 'accepted');
+        const isFollowed = !!userFollow && (!userFollow.status || userFollow.status === 'accepted');
         const followStatus = userFollow?.status || null;
 
-        // Proteksi konten jika akun privat
-        let tweets = userTweets || [];
-        if (userDb.isPrivate && currentUser.id !== userDb._id.toString() && !isFollowed) {
+        let tweets = userTweets;
+        if (userDb.isPrivate && currentUser.id !== id && !isFollowed) {
             tweets = [];
         }
 
         return {
-            user: userDb,
+            user: formattedUserDb,
             tweets: tweets,
             isFollowed: isFollowed,
             followStatus: followStatus

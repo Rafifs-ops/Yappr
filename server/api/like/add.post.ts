@@ -1,6 +1,4 @@
-import { Like } from "../../models/Like.schema";
-import { Twit } from "../../models/Twit.schema";
-import { Notification } from "../../models/Notification.schema";
+import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -12,28 +10,31 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'twit dan user tidak ada' });
         }
 
-        const newLike = await Like.create({
-            twit: body.twitId, // id twit yang di like
-            user: user.id, // id user yang like
+        const newLike = await prisma.like.create({
+            data: {
+                twitId: body.twitId,
+                userId: user.id
+            }
         });
 
-        // Create Notification
-        const twit = await Twit.findById(body.twitId);
-        if (twit && twit.user.toString() !== user.id.toString()) {
-            await Notification.create({
-                user: twit.user,
-                sender: user.id,
-                type: 'like',
-                message: 'menyukai twit Anda',
-                twitText: twit.text,
-                twitId: body.twitId,
+        const twit = await prisma.twit.findUnique({ where: { id: body.twitId } });
+        if (twit && twit.userId !== user.id) {
+            await prisma.notification.create({
+                data: {
+                    userId: twit.userId,
+                    senderId: user.id,
+                    type: 'like',
+                    message: 'menyukai twit Anda',
+                    twitText: twit.text,
+                    twitId: body.twitId,
+                }
             });
         }
 
-        const updateTwit = await Twit.updateOne(
-            { _id: body.twitId },
-            { $inc: { likesCount: 1 } }
-        );
+        const updateTwit = await prisma.twit.update({
+            where: { id: body.twitId },
+            data: { likesCount: { increment: 1 } }
+        });
 
         return {
             newLike,

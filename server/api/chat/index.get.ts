@@ -1,66 +1,68 @@
 import { session } from "../../utils/session";
-import { MemberChat } from "../../models/memberChat.schema";
-import { Chat } from "../../models/Chat.schema";
-import { Message } from "../../models/Message.schema";
-import { User } from "../../models/User.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
-        const auth = await session(event); // mengambil session
+        const auth = await session(event);
 
-        // mengambil semua chat di mana user adalah anggota
-        const memberChats = await MemberChat.find({ userId: auth.id }).populate('conversationId');
+        const memberChats = await prisma.memberChat.findMany({
+            where: { userId: auth.id },
+            include: {
+                chat: true
+            }
+        });
 
-        const chatList = []; // inisialisasi chatList
+        const chatList = [];
 
-        // Looping semua chat di mana user adalah anggota
         for (const mc of memberChats) {
-            const chat = mc.conversationId as any; // mengambil chat
+            const chat = mc.chat;
             if (!chat) continue;
 
-            // mengambil anggota lain dari chat
-            const otherMembers = await MemberChat.find({
-                conversationId: chat._id,
-                userId: { $ne: auth.id }
-            }).populate('userId');
+            const otherMembers = await prisma.memberChat.findMany({
+                where: {
+                    conversationId: chat.id,
+                    NOT: { userId: auth.id }
+                },
+                include: {
+                    user: { select: { id: true, username: true, photo: true } }
+                }
+            });
 
-            // menentukan nama dan foto chat (default ke anggota lain pertama jika ini adalah chat 1-on-1)
             let chatName = chat.name;
             let chatPhoto = null;
             let otherUserId = null;
 
-            // jika anggota lain ada
             if (otherMembers.length > 0) {
-                const otherUser = otherMembers[0]?.userId as any;
-                // jika nama chat tidak ada atau "Direct Message" maka akan diisi dengan nama anggota lain
+                const otherUser = otherMembers[0].user;
                 if (!chatName || chatName === 'Direct Message') {
                     chatName = otherUser.username;
                 }
                 chatPhoto = otherUser.photo;
-                otherUserId = otherUser._id;
+                otherUserId = otherUser.id;
             }
 
-            // mengambil pesan terakhir untuk preview
-            const latestMessage = await Message.findOne({ chatId: chat._id })
-                .sort({ createdAt: -1 })
-                .populate('senderId');
+            const latestMessage = await prisma.message.findFirst({
+                where: { chatId: chat.id },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    sender: { select: { username: true } }
+                }
+            });
 
-            // memasukkan data ke chatList
             chatList.push({
-                _id: chat._id,
+                _id: chat.id,
                 name: chatName,
                 photo: chatPhoto,
                 otherUserId: otherUserId,
                 latestMessage: latestMessage ? {
                     content: latestMessage.content,
                     createdAt: latestMessage.createdAt,
-                    sender: (latestMessage.senderId as any)?.username
+                    sender: latestMessage.sender?.username
                 } : null,
                 updatedAt: latestMessage ? latestMessage.createdAt : chat.createdAt
             });
         }
 
-        // Sort chats by latest update
         chatList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
         return chatList;

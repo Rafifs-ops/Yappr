@@ -1,9 +1,23 @@
-import { User } from '../../models/User.schema';
+import { prisma } from '../../utils/prisma';
 
 export default defineEventHandler(async (event) => {
     try {
-        const userDb = await User.find({}).sort({ createdAt: -1 });
-        return userDb;
+        const userDb = await prisma.user.findMany({
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                username: true,
+                photo: true,
+                email: true,
+                bio: true,
+                followers: true,
+                following: true,
+                isPrivate: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+        return userDb.map((u: any) => ({ ...u, _id: u.id }));
     } catch (error) {
         console.error('Error fetching profile data:', error);
         throw createError({

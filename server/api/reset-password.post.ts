@@ -1,6 +1,6 @@
-import { Otp } from '../models/Otp.schema';
-import { User } from '../models/User.schema';
+import { prisma } from '../utils/prisma';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
@@ -10,29 +10,32 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Data belum lengkap' });
     }
 
-    // Verifikasi OTP sekali lagi untuk memastikan keamanan
-    const otpDoc = await Otp.findOne({ email, otp, type: 'reset_password' });
+    const hashedInput = crypto.createHash('sha256').update(otp).digest('hex');
+    const otpDoc = await prisma.otp.findFirst({
+        where: { email, otp: hashedInput, type: 'reset_password' }
+    });
 
     if (!otpDoc) {
         throw createError({ statusCode: 400, statusMessage: 'OTP tidak valid atau salah' });
     }
 
     if (new Date() > otpDoc.expiresAt) {
-        await Otp.findByIdAndDelete(otpDoc._id);
+        await prisma.otp.delete({ where: { id: otpDoc.id } });
         throw createError({ statusCode: 400, statusMessage: 'OTP sudah kadaluwarsa' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
         throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save();
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword }
+    });
 
-    // Hapus OTP setelah digunakan
-    await Otp.findByIdAndDelete(otpDoc._id);
+    await prisma.otp.delete({ where: { id: otpDoc.id } });
 
     return { status: 'Password berhasil diubah' };
 });

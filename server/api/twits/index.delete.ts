@@ -1,18 +1,30 @@
-import { Twit } from "../../models/Twit.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
-        const twit = await Twit.findByIdAndDelete(body.twitId);
-        
-        if (twit && twit.SubTwit?.isSubTwit && twit.SubTwit.reference) {
-            await Twit.findByIdAndUpdate(twit.SubTwit.reference, { $inc: { commentCount: -1 } });
-        }
-        
-        // Hapus semua komentar yang me-reference ke twit ini
-        await Twit.deleteMany({ 'SubTwit.reference': body.twitId });
+        const twit = await prisma.twit.findUnique({ where: { id: body.twitId } });
 
-        return { success: true, data: twit };
+        if (!twit) {
+            throw createError({ statusCode: 404, statusMessage: 'Twit not found' });
+        }
+
+        if (twit.isSubTwit && twit.referenceId) {
+            await prisma.twit.update({
+                where: { id: twit.referenceId },
+                data: { commentCount: { decrement: 1 } }
+            });
+        }
+
+        await prisma.twit.deleteMany({
+            where: { referenceId: body.twitId }
+        });
+
+        const deletedTwit = await prisma.twit.delete({
+            where: { id: body.twitId }
+        });
+
+        return { success: true, data: { ...deletedTwit, _id: deletedTwit.id } };
     } catch (error: any) {
         throw createError({ statusCode: 500, statusMessage: error.message });
     }

@@ -1,4 +1,4 @@
-import { Follow } from '../../../models/Follow.schema';
+import { prisma } from '../../../utils/prisma';
 
 export default defineEventHandler(async (event) => {
     try {
@@ -6,21 +6,44 @@ export default defineEventHandler(async (event) => {
         if (!id) {
             throw createError({ statusCode: 400, statusMessage: 'User ID is required' });
         }
-        const followers = await Follow.find({
-            following: id,
-            status: 'accepted'
-        }).populate('follower', 'username photo');
 
-        const following = await Follow.find({
-            follower: id,
-            status: 'accepted'
-        }).populate('following', 'username photo');
+        const followers = await prisma.follow.findMany({
+            where: {
+                followingId: id,
+                status: 'accepted'
+            },
+            include: {
+                follower: {
+                    select: {
+                        id: true,
+                        username: true,
+                        photo: true
+                    }
+                }
+            }
+        });
+
+        const following = await prisma.follow.findMany({
+            where: {
+                followerId: id,
+                status: 'accepted'
+            },
+            include: {
+                following: {
+                    select: {
+                        id: true,
+                        username: true,
+                        photo: true
+                    }
+                }
+            }
+        });
 
         return {
-            followers: followers.map((f) => f.follower),
-            following: following.map((f) => f.following)
-        }
+            followers: followers.map((f: any) => ({ ...f.follower, _id: f.follower.id })),
+            following: following.map((f: any) => ({ ...f.following, _id: f.following.id }))
+        };
     } catch (error) {
-        console.log(error)
+        console.log(error);
     }
-})
+});

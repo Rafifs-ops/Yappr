@@ -1,22 +1,28 @@
-import { User } from '../../models/User.schema'
+import { prisma } from '../../utils/prisma';
 
 export default defineEventHandler(async (event) => {
-    // Ambil query 'q' dari URL (misal: /api/user/search?q=raf)
-    const query = getQuery(event)
-    const search = query.q as string
+    const query = getQuery(event);
+    const search = query.q as string;
 
-    if (!search) return []
+    if (!search) return [];
 
     try {
-        // Cari user yang username-nya mengandung huruf yang diketik (case-insensitive)
-        const users = await User.find({
-            username: { $regex: search, $options: 'i' }
-        })
-            .limit(5) // Batasi maksimal 5 saran agar pop-up tidak kepanjangan
-            .select('_id username name photo') // Ambil field yang dibutuhkan saja
+        const users = await prisma.user.findMany({
+            where: {
+                username: {
+                    contains: search
+                }
+            },
+            take: 5,
+            select: {
+                id: true,
+                username: true,
+                photo: true
+            }
+        });
 
-        return users
+        return users.map((u: any) => ({ ...u, _id: u.id, name: u.username }));
     } catch (error) {
-        return []
+        return [];
     }
-})
+});

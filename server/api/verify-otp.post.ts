@@ -1,5 +1,4 @@
-import { Otp } from '../models/Otp.schema';
-import { User } from '../models/User.schema';
+import { prisma } from '../utils/prisma';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -12,29 +11,23 @@ export default defineEventHandler(async (event) => {
     }
 
     const hashedInput = crypto.createHash('sha256').update(otp).digest('hex');
-    const otpDoc = await Otp.findOne({ email, otp: hashedInput, type });
+    const otpDoc = await prisma.otp.findFirst({
+        where: { email, otp: hashedInput, type }
+    });
 
     if (!otpDoc) {
         throw createError({ statusCode: 400, statusMessage: 'OTP tidak valid atau salah' });
     }
 
     if (new Date() > otpDoc.expiresAt) {
-        await Otp.deleteMany({ email, type });
+        await prisma.otp.deleteMany({ where: { email, type } });
         throw createError({ statusCode: 400, statusMessage: 'OTP sudah kadaluwarsa' });
     }
 
     if (type === 'register') {
-        const user = await User.findOne({ email });
+        const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
-        }
-
-        user.emailVerifiedAt = new Date();
-        await user.save();
-
-        // Buat sesi login
-        const payload = {
-            userId: user._id.toString(),
         }
 
         const config = useRuntimeConfig();
@@ -43,11 +36,20 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, message: 'JWT Secret is not defined in runtime config' });
         }
 
-        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '15m' })
+        const payload = {
+            userId: user.id,
+        };
+
+        const token = jwt.sign(payload, secretAuthKey, { expiresIn: '15m' });
         const refreshToken = jwt.sign(payload, secretAuthKey, { expiresIn: '7d' });
 
-        user.refreshToken = refreshToken;
-        await user.save();
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerifiedAt: new Date(),
+                refreshToken: refreshToken
+            }
+        });
 
         setCookie(event, 'auth_token', token, {
             maxAge: 60 * 15,  // 15 menit
@@ -55,7 +57,7 @@ export default defineEventHandler(async (event) => {
             secure: true,
             path: '/',
         });
-        
+
         setCookie(event, 'refresh_token', refreshToken, {
             maxAge: 60 * 60 * 24 * 7,  // 7 hari
             httpOnly: true,
@@ -63,13 +65,10 @@ export default defineEventHandler(async (event) => {
             path: '/',
         });
 
-        // Hapus OTP setelah berhasil
-        await Otp.deleteMany({ email, type });
+        await prisma.otp.deleteMany({ where: { email, type } });
 
         return { status: 'Verifikasi berhasil dan login sukses' };
     } else if (type === 'reset_password') {
-        // Untuk reset password, cukup verify OTP dan kembalikan sukses
-        // Frontend lalu memanggil endpoint reset-password
         return { status: 'OTP reset password valid' };
     } else {
         throw createError({ statusCode: 400, statusMessage: 'Tipe OTP tidak valid' });

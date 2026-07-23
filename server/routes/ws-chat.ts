@@ -1,4 +1,4 @@
-import { Message } from '../models/Message.schema';
+import { prisma } from '../utils/prisma';
 
 // Menyimpan daftar koneksi aktif untuk heartbeat/cleanup jika perlu
 const activeConnections = new Set<any>();
@@ -21,25 +21,44 @@ export default defineWebSocketHandler({
             }
 
             if (data.type === 'message') {
-                // Simpan pesan ke MongoDB
-                const newMessage = await Message.create({
-                    chatId: data.chatId,
-                    senderId: data.senderId,
-                    content: data.content
+                // Simpan pesan ke SQLite via Prisma
+                const newMessage = await prisma.message.create({
+                    data: {
+                        chatId: data.chatId,
+                        senderId: data.senderId,
+                        content: data.content
+                    },
+                    include: {
+                        sender: {
+                            select: {
+                                id: true,
+                                username: true,
+                                photo: true
+                            }
+                        }
+                    }
                 });
 
-                // Populate data pengirim agar langsung tampil foto & namanya di sisi klien
-                await newMessage.populate('senderId', 'username photo');
+                // Format response structure compatible with frontend
+                const formattedMessage = {
+                    ...newMessage,
+                    _id: newMessage.id,
+                    senderId: {
+                        _id: newMessage.sender.id,
+                        username: newMessage.sender.username,
+                        photo: newMessage.sender.photo
+                    }
+                };
 
                 // Broadcast pesan ini ke semua peer yang terhubung ke chatId tersebut
                 peer.publish(data.chatId, JSON.stringify({
                     type: 'new_message',
-                    message: newMessage
+                    message: formattedMessage
                 }));
 
                 peer.send(JSON.stringify({
                     type: 'new_message',
-                    message: newMessage
+                    message: formattedMessage
                 }));
             }
         } catch (error) {
@@ -49,7 +68,6 @@ export default defineWebSocketHandler({
 
     error(peer, error) {
         console.error(`[WS] WebSocket error for peer ${peer.id}:`, error);
-        // We do not need to explicitly close it, the framework handles it, but we can clean up
         activeConnections.delete(peer);
     },
 
@@ -66,7 +84,7 @@ setInterval(() => {
             activeConnections.delete(peer);
         } else {
             try {
-                peer.send('ping'); // Atau bisa peer.ping() jika didukung oleh adapter WS nuxt
+                peer.send('ping');
             } catch (e) {
                 activeConnections.delete(peer);
             }

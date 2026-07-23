@@ -1,0 +1,191 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  username        String    @unique
+  photo           String    @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+  email           String    @unique
+  password        String
+  bio             String
+  emailVerifiedAt DateTime?
+  followers       Int       @default(0)
+  following       Int       @default(0)
+  isPrivate       Boolean   @default(false)
+  refreshToken    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  twits                 Twit[]         @relation("UserTwits")
+  likes                 Like[]
+  reposts               Repost[]
+  followingFollows      Follow[]       @relation("FollowerUser")
+  followerFollows       Follow[]       @relation("FollowingUser")
+  sentNotifications     Notification[] @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationRecipient")
+  messages              Message[]
+  memberChats           MemberChat[]
+  twitMentions          TwitMention[]
+}
+
+model Twit {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation("UserTwits", fields: [userId], references: [id], onDelete: Cascade)
+  text         String
+  image        String?
+  video        String?
+  likesCount   Int      @default(0)
+  commentCount Int      @default(0)
+  repostCount  Int      @default(0)
+
+  isSubTwit   Boolean @default(false)
+  referenceId String?
+  reference   Twit?   @relation("SubTwitRel", fields: [referenceId], references: [id], onDelete: SetNull)
+  subTwits    Twit[]  @relation("SubTwitRel")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hashtags      TwitHashtag[]
+  mentions      TwitMention[]
+  likes         Like[]
+  reposts       Repost[]
+  notifications Notification[]
+
+  @@index([userId, createdAt])
+}
+
+model TwitHashtag {
+  id     String @id @default(uuid())
+  tag    String
+  twitId String
+  twit   Twit   @relation(fields: [twitId], references: [id], onDelete: Cascade)
+
+  @@index([tag])
+  @@index([twitId])
+}
+
+model TwitMention {
+  id     String @id @default(uuid())
+  twitId String
+  twit   Twit   @relation(fields: [twitId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([twitId])
+  @@index([userId])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twitId    String
+  twit      Twit     @relation(fields: [twitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, twitId])
+  @@index([userId])
+  @@index([twitId])
+}
+
+model Repost {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twitId    String
+  twit      Twit     @relation(fields: [twitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, twitId])
+  @@index([userId])
+  @@index([twitId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("FollowerUser", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("FollowingUser", fields: [followingId], references: [id], onDelete: Cascade)
+  status      String   @default("accepted")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User      @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  type        String
+  message     String
+  twitId      String?
+  twit        Twit?     @relation(fields: [twitId], references: [id], onDelete: SetNull)
+  twitText    String?
+  commentText String?
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  type      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chat {
+  id        String       @id @default(uuid())
+  name      String
+  createdAt DateTime     @default(now())
+  messages  Message[]
+  members   MemberChat[]
+}
+
+model MemberChat {
+  id             String   @id @default(uuid())
+  conversationId String
+  chat           Chat     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String   @default("member")
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+  @@index([senderId])
+}

@@ -1,16 +1,12 @@
-import { Twit } from "../../../models/Twit.schema";
-import { Like } from "../../../models/Like.schema";
-import { Repost } from "../../../models/Repost.schema";
+import { prisma } from "../../../utils/prisma";
 import { session } from "../../../utils/session";
-import { User } from "../../../models/User.schema";
-import { Follow } from "../../../models/Follow.schema";
 
 export default defineEventHandler(async (event) => {
     try {
         const id = getRouterParam(event, 'id');
-        const { cursor } = getQuery(event);
+        if (!id) throw createError({ statusCode: 400, statusMessage: 'ID User required' });
 
-        const targetUser = await User.findById(id);
+        const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) {
             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
         }
@@ -26,71 +22,70 @@ export default defineEventHandler(async (event) => {
             if (!currentUser) {
                 return [];
             }
-            const follow = await Follow.findOne({
-                follower: currentUser.id,
-                following: id,
-                $or: [{ status: 'accepted' }, { status: { $exists: false } }]
+            const follow = await prisma.follow.findFirst({
+                where: {
+                    followerId: currentUser.id,
+                    followingId: id,
+                    status: 'accepted'
+                }
             });
             if (!follow) {
                 return [];
             }
         }
 
-        // 1. Ambil twit
-        const query: any = { user: id };
-        if (cursor) query._id = { $lt: cursor };
-
-        const twits = await Twit.find(query)
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .populate('user', 'username photo')
-            .populate({
-                path: 'SubTwit.reference',
-                populate: { path: 'user', select: 'username photo' }
-            })
-            .lean();
-
-        if (!twits) {
-            throw createError({ statusCode: 404, statusMessage: 'Twit tidak ditemukan' });
-        }
-
-        // Jika user belum login, asumsikan belum ada yang dilike dan direpost
-        if (!currentUser) {
-            return twits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
-        }
-
-        // Ambil semua ID twit dari hasil query pertama
-        const twitIds = twits.map(t => t._id);
-
-        // Cari semua twit yang di like dan di repost oleh user
-        const userLikes = await Like.find({
-            user: currentUser.id,
-            twit: { $in: twitIds }
-        }).lean();
-        const userReposts = await Repost.find({
-            user: currentUser.id,
-            twit: { $in: twitIds }
-        }).lean();
-
-        // Ubah array likes dan reposts menjadi Set berisi ID string untuk pencarian instan (O(1))
-        const likedTwitIds = new Set(userLikes.map(like => like.twit?.toString()));
-        const repostedTwitIds = new Set(userReposts.map(repost => repost.twit?.toString()));
-
-        // Petakan status isLiked dan isReposted ke masing-masing twit
-        const twitsWithLikeStatus = twits.map(twit => {
-            return {
-                ...twit,
-                isLiked: likedTwitIds.has(twit._id.toString()),
-                isReposted: repostedTwitIds.has(twit._id.toString())
-            };
+        const twits = await prisma.twit.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+            include: {
+                user: { select: { id: true, username: true, photo: true } },
+                reference: {
+                    include: {
+                        user: { select: { id: true, username: true, photo: true } }
+                    }
+                }
+            }
         });
 
-        return twitsWithLikeStatus;
-    } catch (error: any) {
-        if (error.name === 'CastError') {
-            throw createError({ statusCode: 400, statusMessage: error.message });
+        const formattedTwits = twits.map(twit => ({
+            ...twit,
+            _id: twit.id,
+            user: twit.user ? { ...twit.user, _id: twit.user.id } : null,
+            SubTwit: {
+                isSubTwit: twit.isSubTwit,
+                reference: twit.reference ? {
+                    ...twit.reference,
+                    _id: twit.reference.id,
+                    user: twit.reference.user ? { ...twit.reference.user, _id: twit.reference.user.id } : null
+                } : null
+            }
+        }));
+
+        if (!currentUser) {
+            return formattedTwits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
         }
+
+        const twitIds = formattedTwits.map(t => t.id);
+
+        const userLikes = await prisma.like.findMany({
+            where: { userId: currentUser.id, twitId: { in: twitIds } },
+            select: { twitId: true }
+        });
+        const userReposts = await prisma.repost.findMany({
+            where: { userId: currentUser.id, twitId: { in: twitIds } },
+            select: { twitId: true }
+        });
+
+        const likedTwitIds = new Set(userLikes.map(like => like.twitId));
+        const repostedTwitIds = new Set(userReposts.map(repost => repost.twitId));
+
+        return formattedTwits.map(twit => ({
+            ...twit,
+            isLiked: likedTwitIds.has(twit.id),
+            isReposted: repostedTwitIds.has(twit.id)
+        }));
+    } catch (error: any) {
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }
 });
-

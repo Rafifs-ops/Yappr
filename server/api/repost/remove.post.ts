@@ -1,5 +1,4 @@
-import { Repost } from "../../models/Repost.schema";
-import { Twit } from "../../models/Twit.schema";
+import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -11,15 +10,17 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'twit dan user tidak ada' });
         }
 
-        const removedRepost = await Repost.deleteOne({
-            twit: body.twitId,
-            user: user.id,
+        const removedRepost = await prisma.repost.deleteMany({
+            where: {
+                twitId: body.twitId,
+                userId: user.id,
+            }
         });
 
-        const updateTwit = await Twit.updateOne(
-            { _id: body.twitId },
-            { $inc: { repostCount: -1 } }
-        );
+        const updateTwit = await prisma.twit.update({
+            where: { id: body.twitId },
+            data: { repostCount: { decrement: 1 } }
+        });
 
         return {
             removedRepost,

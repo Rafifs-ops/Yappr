@@ -1,7 +1,5 @@
-import { Otp } from '../models/Otp.schema';
-import { User } from '../models/User.schema';
+import { prisma } from '../utils/prisma';
 import nodemailer from 'nodemailer';
-
 import crypto from 'crypto';
 
 export default defineEventHandler(async (event) => {
@@ -13,7 +11,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (type === 'register') {
-        const user = await User.findOne({ email });
+        const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan. Silakan daftar terlebih dahulu.' });
         }
@@ -21,7 +19,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'Email sudah terverifikasi' });
         }
     } else if (type === 'reset_password') {
-        const user = await User.findOne({ email });
+        const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
         }
@@ -29,16 +27,20 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Tipe OTP tidak valid' });
     }
 
-    // Generate 6 digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
-    // Hash OTP
     const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex');
 
-    // Simpan ke database (replace if exists for the same email and type)
-    await Otp.deleteMany({ email, type });
-    await Otp.create({ email, otp: hashedOtp, type, expiresAt });
+    await prisma.otp.deleteMany({ where: { email, type } });
+    await prisma.otp.create({
+        data: {
+            email,
+            otp: hashedOtp,
+            type,
+            expiresAt
+        }
+    });
 
     try {
         const config = useRuntimeConfig();

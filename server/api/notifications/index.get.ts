@@ -1,4 +1,4 @@
-import { Notification } from "../../models/Notification.schema";
+import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -8,11 +8,25 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
         }
 
-        const notifications = await Notification.find({ user: user.id })
-            .populate('sender', 'username name profileImage')
-            .sort({ createdAt: -1 });
+        const notifications = await prisma.notification.findMany({
+            where: { userId: user.id },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                sender: { select: { id: true, username: true, photo: true } }
+            }
+        });
 
-        return notifications;
+        return notifications.map((n: any) => ({
+            ...n,
+            _id: n.id,
+            user: n.userId,
+            sender: n.sender ? {
+                ...n.sender,
+                _id: n.sender.id,
+                name: n.sender.username,
+                profileImage: n.sender.photo
+            } : null
+        }));
     } catch (error: any) {
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }

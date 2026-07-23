@@ -17,7 +17,6 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    mongodbUri: process.env.MONGODB_URI,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     authSecret: process.env.AUTH_SECRET,

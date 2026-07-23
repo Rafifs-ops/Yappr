@@ -1,11 +1,6 @@
-import { Twit } from '../../models/Twit.schema';
-import { Notification } from '../../models/Notification.schema';
+import { prisma } from '../../utils/prisma';
 import { session } from '../../utils/session';
-import { User } from '../../models/User.schema';
 import { v2 as cloudinary } from 'cloudinary';
-import mongoose from 'mongoose';
-
-
 
 // Helper function untuk upload file berbentuk Buffer (Stream) ke Cloudinary
 const uploadStream = (buffer: Buffer, options: any) => {
@@ -21,7 +16,6 @@ const uploadStream = (buffer: Buffer, options: any) => {
 export default defineEventHandler(async (event) => {
     try {
         const config = useRuntimeConfig();
-        // Configure Cloudinary
         cloudinary.config({
             cloud_name: config.cloudinaryCloudName,
             api_key: config.cloudinaryApiKey,
@@ -30,12 +24,10 @@ export default defineEventHandler(async (event) => {
         });
         const user = await session(event);
 
-        // Cek autentikasi user
         if (!user) {
             throw createError({ statusCode: 401, statusMessage: 'Akses ditolak. User tidak valid.' });
         }
 
-        // Membaca FormData dari request
         const multipartData = await readMultipartFormData(event);
         if (!multipartData) {
             throw createError({ statusCode: 400, statusMessage: 'Data form tidak valid atau kosong' });
@@ -47,7 +39,6 @@ export default defineEventHandler(async (event) => {
         let imageBuffer: Buffer | undefined;
         let videoBuffer: Buffer | undefined;
 
-        // Ekstrak data dari array multipart
         for (const part of multipartData) {
             if (part.name === 'text' && part.data) {
                 text = part.data.toString('utf-8');
@@ -70,19 +61,17 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Membersihkan tag HTML dari tiptap
         const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const MAX_TWIT_LENGTH = 280;
 
-        // Tolak jika teks kosong
         if (!plainText) {
             throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
         }
 
         if (plainText.length > MAX_TWIT_LENGTH) {
-            throw createError({ 
-                statusCode: 400, 
-                statusMessage: `Twit terlalu panjang. Maksimal ${MAX_TWIT_LENGTH} karakter.` 
+            throw createError({
+                statusCode: 400,
+                statusMessage: `Twit terlalu panjang. Maksimal ${MAX_TWIT_LENGTH} karakter.`
             });
         }
 
@@ -92,35 +81,34 @@ export default defineEventHandler(async (event) => {
         const mentionedUsernames = text.match(new RegExp(`@([a-zA-Z0-9_]{1,${MAX_MENTION_LENGTH}})`, 'g'))
             ?.map(m => m.substring(1))
             .slice(0, MAX_MENTIONS) || [];
-            
+
         let mentionIds: string[] = [];
         let taggedUsers: any[] = [];
 
-        // Validasi jumlah dan panjang mention
         if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).length > MAX_MENTIONS) {
-            throw createError({ 
-                statusCode: 400, 
-                statusMessage: `Maksimal ${MAX_MENTIONS} mention per twit` 
+            throw createError({
+                statusCode: 400,
+                statusMessage: `Maksimal ${MAX_MENTIONS} mention per twit`
             });
         }
 
         if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).some(m => m.length - 1 > MAX_MENTION_LENGTH)) {
-             throw createError({ 
-                statusCode: 400, 
-                statusMessage: `Username mention terlalu panjang. Maksimal ${MAX_MENTION_LENGTH} karakter.` 
+            throw createError({
+                statusCode: 400,
+                statusMessage: `Username mention terlalu panjang. Maksimal ${MAX_MENTION_LENGTH} karakter.`
             });
         }
 
-        // Check user if mentioned
         if (mentionedUsernames.length > 0) {
-            taggedUsers = await User.find({ username: { $in: mentionedUsernames } });
-            mentionIds = taggedUsers.map(user => user._id.toString());
+            taggedUsers = await prisma.user.findMany({
+                where: { username: { in: mentionedUsernames } }
+            });
+            mentionIds = taggedUsers.map(u => u.id);
         }
 
         let imageUrl = '';
         let videoUrl = '';
 
-        // Upload Image via Stream jika ada
         if (imageBuffer) {
             try {
                 const uploadResult: any = await uploadStream(imageBuffer, {
@@ -133,13 +121,12 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Upload Video via Stream jika ada
         if (videoBuffer) {
             try {
                 const uploadResult: any = await uploadStream(videoBuffer, {
                     folder: 'twit_videos_RTwit',
                     resource_type: 'video',
-                    chunk_size: 6000000 // 6MB chunks
+                    chunk_size: 6000000
                 });
                 videoUrl = uploadResult.secure_url;
             } catch (err: any) {
@@ -148,75 +135,76 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        const dbSession = await mongoose.startSession();
-        dbSession.startTransaction();
-        let newTwit: any;
-
-        try {
-            // Simpan data ke MongoDB
-            const newTwitArr = await Twit.create([{
-                user: user.id,
-                text: text,
-                image: imageUrl,
-                video: videoUrl,
-                hashtags: hashtags || [],
-                mentions: mentionIds,
-                likesCount: 0,
-                commentCount: 0,
-                SubTwit: {
-                    isSubTwit: twitId ? true : false,
-                    reference: twitId ? twitId : null
+        const result = await prisma.$transaction(async (tx) => {
+            const newTwit = await tx.twit.create({
+                data: {
+                    userId: user.id,
+                    text: text,
+                    image: imageUrl || null,
+                    video: videoUrl || null,
+                    isSubTwit: !!twitId,
+                    referenceId: twitId || null,
+                    hashtags: {
+                        create: (hashtags || []).map(tag => ({ tag: tag.toLowerCase().trim() }))
+                    },
+                    mentions: {
+                        create: mentionIds.map(mId => ({ userId: mId }))
+                    }
                 }
-            }], { session: dbSession });
-            newTwit = newTwitArr[0];
+            });
 
             if (mentionIds.length > 0) {
-                // Kirim Notifikasi ke setiap user yang di-tag
                 for (const taggedUser of taggedUsers) {
-                    // Jangan kirim notifikasi jika user menge-tag dirinya sendiri
-                    if (taggedUser._id.toString() !== user.id.toString()) {
-                        await Notification.create([{
-                            user: taggedUser._id,
-                            sender: user.id,
-                            type: 'mention',
-                            twitId: newTwit._id,
-                            message: 'menandai Anda dalam yappingannya',
-                            twitText: text,
-                        }], { session: dbSession });
+                    if (taggedUser.id !== user.id) {
+                        await tx.notification.create({
+                            data: {
+                                userId: taggedUser.id,
+                                senderId: user.id,
+                                type: 'mention',
+                                twitId: newTwit.id,
+                                message: 'menandai Anda dalam yappingannya',
+                                twitText: text,
+                            }
+                        });
                     }
                 }
             }
 
             if (twitId) {
-                await Twit.findByIdAndUpdate(twitId, { $inc: { commentCount: 1 } }, { session: dbSession });
+                await tx.twit.update({
+                    where: { id: twitId },
+                    data: { commentCount: { increment: 1 } }
+                });
 
-                const twit = await Twit.findById(twitId).session(dbSession);
-                if (twit && twit.user.toString() !== user.id.toString()) {
-                    await Notification.create([{
-                        user: twit.user,
-                        sender: user.id,
-                        type: 'comment',
-                        message: 'mengomentari twit Anda',
-                        twitText: twit.text,
-                        twitId: twitId, // Menggunakan twitId yang diekstrak dari form
-                        commentText: text,
-                    }], { session: dbSession });
+                const parentTwit = await tx.twit.findUnique({ where: { id: twitId } });
+                if (parentTwit && parentTwit.userId !== user.id) {
+                    await tx.notification.create({
+                        data: {
+                            userId: parentTwit.userId,
+                            senderId: user.id,
+                            type: 'comment',
+                            message: 'mengomentari twit Anda',
+                            twitText: parentTwit.text,
+                            twitId: twitId,
+                            commentText: text,
+                        }
+                    });
                 }
             }
 
-            await dbSession.commitTransaction();
-            dbSession.endSession();
-        } catch (error) {
-            await dbSession.abortTransaction();
-            dbSession.endSession();
-            throw error;
-        }
+            return {
+                ...newTwit,
+                _id: newTwit.id,
+                SubTwit: {
+                    isSubTwit: newTwit.isSubTwit,
+                    reference: newTwit.referenceId
+                }
+            };
+        });
 
-        return { success: true, data: newTwit };
+        return { success: true, data: result };
+
     } catch (error: any) {
-        if (error.name === 'ValidationError') {
-            throw createError({ statusCode: 400, statusMessage: error.message });
-        }
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }
 });

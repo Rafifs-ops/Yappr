@@ -1,4 +1,4 @@
-import { Notification } from "../../models/Notification.schema";
+import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -9,18 +9,24 @@ export default defineEventHandler(async (event) => {
         }
 
         const id = getRouterParam(event, 'id');
+        if (!id) {
+            throw createError({ statusCode: 400, statusMessage: 'ID required' });
+        }
 
-        const notification = await Notification.findOneAndUpdate(
-            { _id: id, user: user.id },
-            { isRead: true },
-            { returnDocument: 'after' }
-        );
+        const notification = await prisma.notification.findFirst({
+            where: { id, userId: user.id }
+        });
 
         if (!notification) {
             throw createError({ statusCode: 404, statusMessage: 'Notification not found' });
         }
 
-        return notification;
+        const updated = await prisma.notification.update({
+            where: { id: notification.id },
+            data: { isRead: true }
+        });
+
+        return { ...updated, _id: updated.id };
     } catch (error: any) {
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }

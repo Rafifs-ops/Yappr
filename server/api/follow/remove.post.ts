@@ -1,14 +1,28 @@
-import { Follow } from "../../models/Follow.schema";
-import { User } from "../../models/User.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
         const { follower, following } = await readBody(event);
-        const follow = await Follow.findOneAndDelete({ follower, following });
 
-        if (follow && follow.status === 'accepted') {
-            await User.findByIdAndUpdate(follower, { $inc: { following: -1 } });
-            await User.findByIdAndUpdate(following, { $inc: { followers: -1 } });
+        const followRecord = await prisma.follow.findFirst({
+            where: { followerId: follower, followingId: following }
+        });
+
+        if (followRecord) {
+            await prisma.follow.delete({
+                where: { id: followRecord.id }
+            });
+
+            if (followRecord.status === 'accepted') {
+                await prisma.user.update({
+                    where: { id: follower },
+                    data: { following: { decrement: 1 } }
+                });
+                await prisma.user.update({
+                    where: { id: following },
+                    data: { followers: { decrement: 1 } }
+                });
+            }
         }
 
         return {
@@ -22,4 +36,3 @@ export default defineEventHandler(async (event) => {
         });
     }
 });
-

@@ -1,37 +1,33 @@
-import { User } from "../../models/User.schema";
+import { prisma } from '../../utils/prisma';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 export default defineEventHandler(async (event) => {
-    const data = await readBody(event); // Mengambil data body request
-    const photo = event.context.photo; // Mengambil foto
+    const data = await readBody(event);
+    const photo = event.context.photo;
 
-    // Validasi apakah data ada / tidak
     if (!data.username || !data.password || !data.email || !data.bio) {
         throw createError({ statusCode: 400, statusMessage: 'data belum lengkap' });
     }
 
-    // Validasi format username (huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter)
     const usernameRegex = /^[a-z]{4,15}$/;
     if (!usernameRegex.test(data.username)) {
         throw createError({ statusCode: 400, statusMessage: 'Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter' });
     }
 
-    // Validasi format email
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(data.email)) {
         throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
     }
 
-    // Cek apakah username atau email sudah terdaftar
-    const existingUsers = await User.find({
-        $or: [{ email: data.email }, { username: data.username }]
+    const existingUsers = await prisma.user.findMany({
+        where: {
+            OR: [{ email: data.email }, { username: data.username }]
+        }
     });
 
     if (existingUsers.length > 0) {
-        // Cek jika ada user yang sudah terverifikasi
-        const verifiedUser = existingUsers.find(u => u.emailVerifiedAt);
-        
+        const verifiedUser = existingUsers.find((u: any) => u.emailVerifiedAt);
+
         if (verifiedUser) {
             if (verifiedUser.email === data.email && verifiedUser.username === data.username) {
                 throw createError({ statusCode: 409, statusMessage: 'Username dan Email sudah terdaftar' });
@@ -42,34 +38,30 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        // Jika semua user dengan username/email ini belum terverifikasi, jangan hapus user tersebut
-        // Ini menghindari celah keamanan (menghapus user yang mungkin asli sedang proses daftar).
-        // Kita hanya membersihkan OTP lama jika ada (di logic OTP, bukan di sini)
-        // Jika belum diverifikasi, minta user selesaikan verifikasi
         throw createError({ statusCode: 409, statusMessage: 'Akun dengan email atau username ini sudah terdaftar tapi belum diverifikasi. Silakan minta ulang OTP atau login.' });
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10); // hashing password dengan 10 salt
+    const hashedPassword = await bcrypt.hash(data.password, 10);
 
     try {
-        // Input user ke database
-        await User.create({
-            username: data.username,
-            photo: photo,
-            email: data.email,
-            password: hashedPassword,
-            bio: data.bio
-        })
+        await prisma.user.create({
+            data: {
+                username: data.username,
+                photo: photo || undefined,
+                email: data.email,
+                password: hashedPassword,
+                bio: data.bio
+            }
+        });
 
-        // Session is not created here. The user must verify OTP first.
         return {
             status: 'berhasil daftar',
             message: 'User registered, OTP required'
-        }
+        };
     } catch (error: any) {
-        if (error.code === 11000) {
+        if (error.code === 'P2002') {
             throw createError({ statusCode: 409, statusMessage: 'Username atau Email sudah terdaftar' });
         }
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }
-})
+});

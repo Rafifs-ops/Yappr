@@ -1,39 +1,51 @@
-import { Follow } from "../../models/Follow.schema";
-import { Notification } from "../../models/Notification.schema";
-import { User } from "../../models/User.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
         const { follower, following } = await readBody(event);
 
-        const targetUser = await User.findById(following);
+        const targetUser = await prisma.user.findUnique({ where: { id: following } });
         if (!targetUser) throw createError({ statusCode: 404, statusMessage: 'User not found' });
 
         const isPrivate = targetUser.isPrivate;
         const status = isPrivate ? 'pending' : 'accepted';
 
-        const follow = new Follow({ follower, following, status });
-        await follow.save();
+        await prisma.follow.create({
+            data: {
+                followerId: follower,
+                followingId: following,
+                status: status
+            }
+        });
 
-        // Create Notification
         if (follower !== following) {
             if (isPrivate) {
-                await Notification.create({
-                    user: following,
-                    sender: follower,
-                    type: 'follow_request',
-                    message: 'meminta untuk mengikuti Anda'
+                await prisma.notification.create({
+                    data: {
+                        userId: following,
+                        senderId: follower,
+                        type: 'follow_request',
+                        message: 'meminta untuk mengikuti Anda'
+                    }
                 });
             } else {
-                await Notification.create({
-                    user: following,
-                    sender: follower,
-                    type: 'follow',
-                    message: 'mulai mengikuti Anda'
+                await prisma.notification.create({
+                    data: {
+                        userId: following,
+                        senderId: follower,
+                        type: 'follow',
+                        message: 'mulai mengikuti Anda'
+                    }
                 });
 
-                await User.findByIdAndUpdate(follower, { $inc: { following: 1 } }); // Yang ngefollow, followingnya nambah 1
-                await User.findByIdAndUpdate(following, { $inc: { followers: 1 } }); // Yang difollow, followersnya nambah 1
+                await prisma.user.update({
+                    where: { id: follower },
+                    data: { following: { increment: 1 } }
+                });
+                await prisma.user.update({
+                    where: { id: following },
+                    data: { followers: { increment: 1 } }
+                });
             }
         }
 
@@ -48,4 +60,3 @@ export default defineEventHandler(async (event) => {
         });
     }
 });
-

@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.schema";
+import { prisma } from "./prisma";
 
 // mengambil session
 export const session = async (event: any) => {
@@ -39,8 +39,8 @@ export const session = async (event: any) => {
     if (!decodedToken && refreshTokenCookie) {
         try {
             const decodedRefresh = jwt.verify(refreshTokenCookie, secretAuthKey as string) as any;
-            const user = await User.findById(decodedRefresh.userId);
-            
+            const user = await prisma.user.findUnique({ where: { id: decodedRefresh.userId } });
+
             if (!user) {
                 console.error('Session Error: User not found for refresh token');
                 throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
@@ -51,13 +51,15 @@ export const session = async (event: any) => {
             }
 
             // Issue new access token and rotate refresh token
-            const payload = { userId: user._id.toString() };
+            const payload = { userId: user.id };
             token = jwt.sign(payload, secretAuthKey as string, { expiresIn: '15m' });
             const newRefreshToken = jwt.sign(payload, secretAuthKey as string, { expiresIn: '7d' });
-            
-            user.refreshToken = newRefreshToken;
-            await user.save();
-            
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { refreshToken: newRefreshToken }
+            });
+
             setCookie(event, 'auth_token', token, {
                 maxAge: 60 * 15,  // 15 menit
                 httpOnly: true,
@@ -85,17 +87,17 @@ export const session = async (event: any) => {
     }
 
     try {
-        const user = await User.findById(decodedToken.userId);
+        const user = await prisma.user.findUnique({ where: { id: decodedToken.userId } });
         if (!user) throw new Error();
 
         return {
-            id: user._id.toString(),
+            id: user.id,
             username: user.username,
             photo: user.photo,
             email: user.email,
             bio: user.bio,
-        }
+        };
     } catch (error) {
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
-}
+};

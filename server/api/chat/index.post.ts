@@ -1,7 +1,5 @@
 import { session } from "../../utils/session";
-import { MemberChat } from "../../models/memberChat.schema";
-import { Chat } from "../../models/Chat.schema";
-import { User } from "../../models/User.schema";
+import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
@@ -13,25 +11,26 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'targetUserId is required' });
         }
 
-        // Check if target user exists
-        const targetUser = await User.findById(targetUserId);
+        const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
         if (!targetUser) {
             throw createError({ statusCode: 404, statusMessage: 'User not found' });
         }
 
-        // Prevent chatting with oneself
         if (targetUserId === auth.id) {
             throw createError({ statusCode: 400, statusMessage: 'Cannot chat with yourself' });
         }
 
-        // Check if chat already exists between these two users
-        // Kita cek semua chat yang dimiliki auth, lalu kita cek apakah targetUserId ada di salah satu chat tersebut.
-        const authUserChats = await MemberChat.find({ userId: auth.id });
-        const chatIds = authUserChats.map(mc => mc.conversationId).filter(id => id != null);
+        const authUserChats: any = await prisma.memberChat.findMany({
+            where: { userId: auth.id },
+            select: { conversationId: true }
+        });
+        const chatIds = authUserChats.map((mc: any) => mc.conversationId);
 
-        const existingChat = await MemberChat.findOne({
-            conversationId: { $in: chatIds },
-            userId: targetUserId
+        const existingChat = await prisma.memberChat.findFirst({
+            where: {
+                conversationId: { in: chatIds },
+                userId: targetUserId
+            }
         });
 
         if (existingChat) {
@@ -41,28 +40,21 @@ export default defineEventHandler(async (event) => {
             };
         }
 
-        // Create new chat
-        const newChat = await Chat.create({
-            name: 'Direct Message',
-        });
-
-        // Add both users to MemberChat
-        await MemberChat.insertMany([
-            {
-                conversationId: newChat._id,
-                userId: auth.id,
-                role: 'owner'
-            },
-            {
-                conversationId: newChat._id,
-                userId: targetUserId,
-                role: 'member'
+        const newChat = await prisma.chat.create({
+            data: {
+                name: 'Direct Message',
+                members: {
+                    create: [
+                        { userId: auth.id, role: 'owner' },
+                        { userId: targetUserId, role: 'member' }
+                    ]
+                }
             }
-        ]);
+        });
 
         return {
             message: 'Chat created successfully',
-            chatId: newChat._id
+            chatId: newChat.id
         };
     } catch (error: any) {
         throw createError({

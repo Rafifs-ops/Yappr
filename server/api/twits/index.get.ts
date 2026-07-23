@@ -1,20 +1,37 @@
-import { Twit } from "../../models/Twit.schema";
-import { Like } from "../../models/Like.schema";
-import { Repost } from "../../models/Repost.schema";
+import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
-import { Follow } from "../../models/Follow.schema";
-import { User } from "../../models/User.schema";
 
 /**
- * GET /api/twits
- * Fetches a list of twits, sorted by the newest first.
- * Solves N+1 query problem by batch-fetching relations.
+ * Helper to format Prisma Twit object for frontend compatibility
  */
+const formatTwit = (twit: any) => {
+    if (!twit) return null;
+    return {
+        ...twit,
+        _id: twit.id,
+        user: twit.user ? {
+            ...twit.user,
+            _id: twit.user.id
+        } : null,
+        SubTwit: {
+            isSubTwit: twit.isSubTwit,
+            reference: twit.reference ? {
+                ...twit.reference,
+                _id: twit.reference.id,
+                user: twit.reference.user ? {
+                    ...twit.reference.user,
+                    _id: twit.reference.user.id
+                } : null
+            } : null
+        }
+    };
+};
+
 export default defineEventHandler(async (event) => {
     const queryParams = getQuery(event);
     const cursor = queryParams.cursor;
     const limit = Math.min(parseInt(queryParams.limit as string) || 10, 50);
-    
+
     let currentUser = null;
     try {
         currentUser = await session(event);
@@ -32,96 +49,121 @@ export default defineEventHandler(async (event) => {
         }
 
         if (!currentUser) {
-            const publicUsers = await User.find({ isPrivate: { $ne: true } }).select('_id').lean();
-            const publicUserIds = publicUsers.map(u => u._id);
+            const publicTwits = await prisma.twit.findMany({
+                where: {
+                    user: { isPrivate: false },
+                    ...(cursor && cursor !== 'undefined' && cursor !== 'null' ? { createdAt: { lt: paginationDate } } : {})
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                include: {
+                    user: { select: { id: true, username: true, photo: true } },
+                    reference: {
+                        include: {
+                            user: { select: { id: true, username: true, photo: true } }
+                        }
+                    }
+                }
+            });
 
-            const query: any = { user: { $in: publicUserIds } };
-            if (cursor && cursor !== 'undefined' && cursor !== 'null') {
-                query.createdAt = { $lt: paginationDate };
-            }
-
-            const publicTwits = await Twit.find(query)
-                .sort({ createdAt: -1 })
-                .populate('user', 'username photo')
-                .populate({
-                    path: 'SubTwit.reference',
-                    populate: { path: 'user', select: 'username photo' }
-                })
-                .limit(limit)
-                .lean();
-            return publicTwits.map(twit => ({ ...twit, isLiked: false, isReposted: false }));
+            return publicTwits.map(t => ({
+                ...formatTwit(t),
+                isLiked: false,
+                isReposted: false
+            }));
         }
 
-        const following = await Follow.find({
-            follower: currentUser.id,
-            $or: [{ status: 'accepted' }, { status: { $exists: false } }]
-        }).select('following').lean();
+        const following = await prisma.follow.findMany({
+            where: {
+                followerId: currentUser.id,
+                status: 'accepted'
+            },
+            select: { followingId: true }
+        });
 
-        const followingIds = following.map(f => f.following);
-        followingIds.push(currentUser.id as any);
+        const followingIds = following.map(f => f.followingId);
+        followingIds.push(currentUser.id);
 
-        const queryTwit: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryTwit.createdAt = { $lt: paginationDate };
-        
-        const twitIdsResult = await Twit.find(queryTwit)
-            .sort({ createdAt: -1 }).limit(limit).select('_id createdAt').lean();
+        const twitIdsResult = await prisma.twit.findMany({
+            where: {
+                userId: { in: followingIds },
+                ...(cursor && cursor !== 'undefined' && cursor !== 'null' ? { createdAt: { lt: paginationDate } } : {})
+            },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            select: { id: true, createdAt: true }
+        });
 
-        const queryRepost: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryRepost.createdAt = { $lt: paginationDate };
-        
-        const repostsResult = await Repost.find(queryRepost)
-            .sort({ createdAt: -1 }).limit(limit).select('twit createdAt').lean();
+        const repostsResult = await prisma.repost.findMany({
+            where: {
+                userId: { in: followingIds },
+                ...(cursor && cursor !== 'undefined' && cursor !== 'null' ? { createdAt: { lt: paginationDate } } : {})
+            },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            select: { twitId: true, createdAt: true }
+        });
 
-        const queryLike: any = { user: { $in: followingIds } };
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') queryLike.createdAt = { $lt: paginationDate };
-        
-        const likesResult = await Like.find(queryLike)
-            .sort({ createdAt: -1 }).limit(limit).select('twit createdAt').lean();
+        const likesResult = await prisma.like.findMany({
+            where: {
+                userId: { in: followingIds },
+                ...(cursor && cursor !== 'undefined' && cursor !== 'null' ? { createdAt: { lt: paginationDate } } : {})
+            },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            select: { twitId: true, createdAt: true }
+        });
 
-        // Gabungkan semua interaksi, urutkan berdasarkan waktu kejadian
         const combined = [
-            ...twitIdsResult.map(t => ({ id: t._id?.toString(), date: t.createdAt })),
-            ...repostsResult.map(r => ({ id: r.twit?.toString(), date: r.createdAt })),
-            ...likesResult.map(l => ({ id: l.twit?.toString(), date: l.createdAt }))
+            ...twitIdsResult.map(t => ({ id: t.id, date: t.createdAt })),
+            ...repostsResult.map(r => ({ id: r.twitId, date: r.createdAt })),
+            ...likesResult.map(l => ({ id: l.twitId, date: l.createdAt }))
         ].filter(item => item.id);
 
         combined.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-        // Ambil unik top IDs
         const topIds: string[] = [];
         const seen = new Set();
         for (const item of combined) {
             if (!seen.has(item.id)) {
                 seen.add(item.id);
-                topIds.push(item.id as string);
+                topIds.push(item.id);
                 if (topIds.length >= limit) break;
             }
         }
 
         if (topIds.length === 0) return [];
 
-        // 5. Fetch twit records (tanpa N+1 queries untuk user)
-        const finalTwits = await Twit.find({ _id: { $in: topIds } })
-            .populate('user', 'username photo')
-            .populate({
-                path: 'SubTwit.reference',
-                populate: { path: 'user', select: 'username photo' }
-            })
-            .lean();
+        const finalTwits = await prisma.twit.findMany({
+            where: { id: { in: topIds } },
+            include: {
+                user: { select: { id: true, username: true, photo: true } },
+                reference: {
+                    include: {
+                        user: { select: { id: true, username: true, photo: true } }
+                    }
+                }
+            }
+        });
 
-        // 6. Fetch interaksi user saat ini terhadap kumpulan twit tersebut
-        const myLikes = await Like.find({ user: currentUser.id, twit: { $in: topIds } }).select('twit').lean();
-        const myReposts = await Repost.find({ user: currentUser.id, twit: { $in: topIds } }).select('twit').lean();
+        const myLikes = await prisma.like.findMany({
+            where: { userId: currentUser.id, twitId: { in: topIds } },
+            select: { twitId: true }
+        });
 
-        const likedSet = new Set(myLikes.map(l => l.twit?.toString()));
-        const repostedSet = new Set(myReposts.map(r => r.twit?.toString()));
+        const myReposts = await prisma.repost.findMany({
+            where: { userId: currentUser.id, twitId: { in: topIds } },
+            select: { twitId: true }
+        });
 
-        // 7. Mapping hasil untuk menjaga urutan waktu asli
+        const likedSet = new Set(myLikes.map(l => l.twitId));
+        const repostedSet = new Set(myReposts.map(r => r.twitId));
+
         const result = topIds.map(id => {
-            const twit = finalTwits.find(t => t._id?.toString() === id);
+            const twit = finalTwits.find(t => t.id === id);
             if (!twit) return null;
             return {
-                ...twit,
+                ...formatTwit(twit),
                 isLiked: likedSet.has(id),
                 isReposted: repostedSet.has(id)
             };
@@ -131,9 +173,9 @@ export default defineEventHandler(async (event) => {
 
     } catch (error: any) {
         console.error("Index GET error:", error);
-        throw createError({ 
-            statusCode: 500, 
-            statusMessage: 'Error: ' + (error.stack || error.message) 
+        throw createError({
+            statusCode: 500,
+            statusMessage: 'Error: ' + (error.stack || error.message)
         });
     }
 });
