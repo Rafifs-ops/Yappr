@@ -35,16 +35,17 @@ export default defineEventHandler(async (event) => {
     await Otp.create({ email, otp: otpCode, type, expiresAt });
 
     try {
-        if (process.env.EMAIL_USER && process.env.BREVO_API_KEY) {
+        const config = useRuntimeConfig();
+        if (config.emailUser && config.brevoApiKey) {
             await $fetch('https://api.brevo.com/v3/smtp/email', {
                 method: 'POST',
                 headers: {
                     'accept': 'application/json',
-                    'api-key': process.env.BREVO_API_KEY,
+                    'api-key': config.brevoApiKey,
                     'content-type': 'application/json'
                 },
                 body: {
-                    sender: { name: 'Yappr App', email: process.env.EMAIL_USER },
+                    sender: { name: 'Yappr App', email: config.emailUser },
                     to: [{ email: email }],
                     subject: 'Kode Verifikasi Yappr Anda',
                     htmlContent: `

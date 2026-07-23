@@ -6,8 +6,15 @@ import { Follow } from "../../../../models/Follow.schema";
 export default defineEventHandler(async (event) => {
     try {
         const id = getRouterParam(event, 'userId');
+        const { cursor } = getQuery(event);
+        
         // 1. Ambil twit
-        const searchLiked = await Like.find({ user: id })
+        const query: any = { user: id };
+        if (cursor) query.twit = { $lt: cursor };
+
+        const searchLiked = await Like.find(query)
+            .sort({ twit: -1 })
+            .limit(10)
             .populate({
                 path: 'twit',
                 populate: {

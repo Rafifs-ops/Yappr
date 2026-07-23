@@ -5,13 +5,7 @@ import { User } from '../../models/User.schema';
 import { v2 as cloudinary } from 'cloudinary';
 import mongoose from 'mongoose';
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-});
+
 
 // Helper function untuk upload file berbentuk Buffer (Stream) ke Cloudinary
 const uploadStream = (buffer: Buffer, options: any) => {
@@ -26,6 +20,14 @@ const uploadStream = (buffer: Buffer, options: any) => {
 
 export default defineEventHandler(async (event) => {
     try {
+        const config = useRuntimeConfig();
+        // Configure Cloudinary
+        cloudinary.config({
+            cloud_name: config.cloudinaryCloudName,
+            api_key: config.cloudinaryApiKey,
+            api_secret: config.cloudinaryApiSecret,
+            secure: true
+        });
         const user = await session(event);
 
         // Cek autentikasi user
@@ -119,7 +121,7 @@ export default defineEventHandler(async (event) => {
 
         const dbSession = await mongoose.startSession();
         dbSession.startTransaction();
-        let newTwit;
+        let newTwit: any;
 
         try {
             // Simpan data ke MongoDB

@@ -31,7 +31,8 @@ export default defineEventHandler(async (event) => {
 
     // Membandingkan password
     const isMatch = await bcrypt.compare(data.password, user.password as string);
-    const secretAuthKey = process.env.JWT_SECRET; // Mengambil JWT Secret
+    const config = useRuntimeConfig();
+    const secretAuthKey = config.jwtSecret; // Mengambil JWT Secret
 
     // Validasi JWT Secret
     if (!secretAuthKey) {

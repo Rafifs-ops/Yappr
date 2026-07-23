@@ -7,7 +7,8 @@ export const session = async (event: any) => {
     const refreshTokenCookie = getCookie(event, 'refresh_token');
 
     // mengambil JWT Secret dari environment variable
-    const secretAuthKey = process.env.JWT_SECRET;
+    const config = useRuntimeConfig();
+    const secretAuthKey = config.jwtSecret;
     if (!secretAuthKey) {
         throw createError({
             statusCode: 500,

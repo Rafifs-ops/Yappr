@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 export default defineNitroPlugin(async () => {
     try {
-        const uri = process.env.MONGODB_URI;
+        const config = useRuntimeConfig();
+        const uri = config.mongodbUri;
         if (!uri) {
             console.warn('MONGODB_URI is not defined in .env');
             return;

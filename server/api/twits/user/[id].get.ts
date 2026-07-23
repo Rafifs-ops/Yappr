@@ -8,6 +8,7 @@ import { Follow } from "../../../models/Follow.schema";
 export default defineEventHandler(async (event) => {
     try {
         const id = getRouterParam(event, 'id');
+        const { cursor } = getQuery(event);
 
         const targetUser = await User.findById(id);
         if (!targetUser) {
@@ -36,8 +37,12 @@ export default defineEventHandler(async (event) => {
         }
 
         // 1. Ambil twit
-        const twits = await Twit.find({ user: id })
+        const query: any = { user: id };
+        if (cursor) query._id = { $lt: cursor };
+
+        const twits = await Twit.find(query)
             .sort({ createdAt: -1 })
+            .limit(10)
             .populate('user', 'username photo')
             .populate({
                 path: 'SubTwit.reference',
@@ -68,8 +73,8 @@ export default defineEventHandler(async (event) => {
         }).lean();
 
         // Ubah array likes dan reposts menjadi Set berisi ID string untuk pencarian instan (O(1))
-        const likedTwitIds = new Set(userLikes.map(like => like.twit.toString()));
-        const repostedTwitIds = new Set(userReposts.map(repost => repost.twit.toString()));
+        const likedTwitIds = new Set(userLikes.map(like => like.twit?.toString()));
+        const repostedTwitIds = new Set(userReposts.map(repost => repost.twit?.toString()));
 
         // Petakan status isLiked dan isReposted ke masing-masing twit
         const twitsWithLikeStatus = twits.map(twit => {

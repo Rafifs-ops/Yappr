@@ -2,16 +2,18 @@ import { User } from '../../models/User.schema';
 import { session } from '../../utils/session';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-});
+
 
 export default defineEventHandler(async (event) => {
     try {
+        const config = useRuntimeConfig();
+        // Configure Cloudinary
+        cloudinary.config({
+            cloud_name: config.cloudinaryCloudName,
+            api_key: config.cloudinaryApiKey,
+            api_secret: config.cloudinaryApiSecret,
+            secure: true
+        });
         const body = await readBody(event);
         const currentUser = await session(event);
         

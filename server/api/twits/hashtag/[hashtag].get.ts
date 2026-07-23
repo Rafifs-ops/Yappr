@@ -6,13 +6,19 @@ import { Follow } from "../../../models/Follow.schema";
 
 export default defineEventHandler(async (event) => {
     try {
+        const { cursor } = getQuery(event);
         // 1. Ambil twits
-        const twits = await Twit.find({
-            hashtags: event.context?.params?.hashtag?.toLowerCase()
-        }).sort({ createdAt: -1 }).populate('user', 'username photo isPrivate').populate({
-            path: 'SubTwit.reference',
-            populate: { path: 'user', select: 'username photo isPrivate' }
-        }).lean();
+        const query: any = { hashtags: event.context?.params?.hashtag?.toLowerCase() };
+        if (cursor) query._id = { $lt: cursor };
+
+        const twits = await Twit.find(query)
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .populate('user', 'username photo isPrivate')
+            .populate({
+                path: 'SubTwit.reference',
+                populate: { path: 'user', select: 'username photo isPrivate' }
+            }).lean();
 
         let currentUser = null;
         try {

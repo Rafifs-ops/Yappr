@@ -9,11 +9,23 @@ export default defineNuxtConfig({
     '@nuxtjs/cloudinary',
     'nuxt-security',
   ],
+  runtimeConfig: {
+    mongodbUri: process.env.MONGODB_URI,
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    authSecret: process.env.AUTH_SECRET,
+    authOrigin: process.env.AUTH_ORIGIN,
+    jwtSecret: process.env.JWT_SECRET,
+    cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+    emailUser: process.env.EMAIL_USER,
+    emailPass: process.env.EMAIL_PASS,
+    brevoApiKey: process.env.BREVO_API_KEY,
+  },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
-    apiSecret: process.env.CLOUDINARY_API_SECRET,
-    useSecure: true,
   },
   security: {
     requestSizeLimiter: {
@@ -49,6 +61,14 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       websocket: true
+    }
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+      ]
     }
   }
 })

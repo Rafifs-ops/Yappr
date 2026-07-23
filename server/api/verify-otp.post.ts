@@ -35,7 +35,8 @@ export default defineEventHandler(async (event) => {
             userId: user._id.toString(),
         }
 
-        const secretAuthKey = process.env.JWT_SECRET;
+        const config = useRuntimeConfig();
+        const secretAuthKey = config.jwtSecret;
         if (!secretAuthKey) {
             throw createError({ statusCode: 500, message: 'JWT Secret is not defined in runtime config' });
         }
