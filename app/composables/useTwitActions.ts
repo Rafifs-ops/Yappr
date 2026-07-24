@@ -1,5 +1,5 @@
 import { useNuxtApp } from '#app';
-
+import { useToast } from '~/composables/useToast';
 import type { Ref } from 'vue';
 
 /**
@@ -11,6 +11,7 @@ import type { Ref } from 'vue';
  */
 export function useTwitActions(twits: Ref<any[]>) {
     const { $csrfFetch } = useNuxtApp();
+    const toast = useToast();
 
     /**
      * Toggles the like status of a twit optimistically.
@@ -37,7 +38,7 @@ export function useTwitActions(twits: Ref<any[]>) {
             // Rollback on failure
             targetTwit.isLiked = previousIsLiked;
             targetTwit.isLiked ? targetTwit.likesCount++ : targetTwit.likesCount--;
-            alert(err.statusMessage || 'Gagal mengubah status like');
+            toast.error(err.statusMessage || 'Gagal mengubah status like', 'Like Gagal');
         }
     }
 
@@ -62,11 +63,16 @@ export function useTwitActions(twits: Ref<any[]>) {
                 method: 'POST',
                 body: { twitId: targetTwit._id }
             });
+            if (targetTwit.isReposted) {
+                toast.success('Twit telah direpost!', 'Repost');
+            } else {
+                toast.info('Batal merepost twit', 'Repost');
+            }
         } catch (err: any) {
             // Rollback on failure
             targetTwit.isReposted = previousIsReposted;
             targetTwit.isReposted ? targetTwit.repostCount++ : targetTwit.repostCount--;
-            alert(err.statusMessage || 'Gagal mengubah status repost');
+            toast.error(err.statusMessage || 'Gagal mengubah status repost', 'Repost Gagal');
         }
     }
 
@@ -83,8 +89,9 @@ export function useTwitActions(twits: Ref<any[]>) {
 
             // Remove twit from local state
             twits.value = twits.value.filter(t => t._id !== twitId);
+            toast.success('Twit berhasil dihapus', 'Hapus Twit');
         } catch (err: any) {
-            alert(err.statusMessage || 'Gagal menghapus twit');
+            toast.error(err.statusMessage || 'Gagal menghapus twit', 'Hapus Gagal');
         }
     }
 

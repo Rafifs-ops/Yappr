@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useAuth } from '~/stores/Auth'
+import { useToast } from '~/composables/useToast'
 
 const { $csrfFetch } = useNuxtApp()
 const authStore = useAuth()
+const toast = useToast()
 const chats = ref([])
 const users = ref([])
 const showNewChatModal = ref(false)
@@ -37,10 +39,11 @@ const createChat = async (userId) => {
             body: { targetUserId: userId }
         })
         showNewChatModal.value = false
+        toast.success('Obrolan baru berhasil dibuka', 'Obrolan');
         navigateTo(`/chats/${res.chatId}`)
     } catch (e) {
         console.error(e)
-        alert('Gagal membuat obrolan')
+        toast.error(e.statusMessage || 'Gagal membuat obrolan', 'Gagal Obrolan');
     }
 }
 
@@ -58,18 +61,18 @@ const formatDate = (dateString) => {
             class="flex items-center justify-between bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg">
             <h1 class="text-2xl font-bold text-white tracking-wide">Chats</h1>
             <button @click="showNewChatModal = true"
-                class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-2 rounded-lg font-medium transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.5)]">
-                <Icon name="streamline-ultimate:add-circle-bold-bold" /> New Chat
+                class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg font-medium transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center gap-1.5 text-sm">
+                <i class="bi bi-plus-circle-fill"></i> New Chat
             </button>
         </div>
 
         <!-- Chat List -->
         <div v-if="isLoading" class="flex justify-center py-12">
-            <Icon name="eos-icons:loading" class="w-10 h-10 text-blue-500 animate-spin" />
+            <i class="bi bi-arrow-repeat text-4xl text-blue-500 animate-spin"></i>
         </div>
         <div v-else-if="chats.length === 0"
             class="flex flex-col items-center justify-center py-16 bg-black/20 rounded-xl border border-white/5">
-            <Icon name="mdi:message-outline" class="w-16 h-16 text-gray-500 mb-4" />
+            <i class="bi bi-chat-left-dots-fill text-5xl text-gray-500 mb-4"></i>
             <p class="text-gray-400 text-lg">Belum ada obrolan.</p>
             <p class="text-gray-500 text-sm mt-1">Mulai obrolan baru sekarang!</p>
         </div>
@@ -101,8 +104,8 @@ const formatDate = (dateString) => {
                 class="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
                 <div class="p-4 border-b border-white/10 flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white">Mulai Obrolan</h2>
-                    <button @click="showNewChatModal = false" class="text-gray-400 hover:text-white transition-colors">
-                        <Icon name="streamline-ultimate:arrow-right" class="w-6 h-6" />
+                    <button @click="showNewChatModal = false" class="text-gray-400 hover:text-white transition-colors flex items-center justify-center">
+                        <i class="bi bi-x-lg text-lg"></i>
                     </button>
                 </div>
                 <div class="p-4 overflow-y-auto flex-1 space-y-3">

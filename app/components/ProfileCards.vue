@@ -10,8 +10,8 @@ const props = defineProps({
 <template>
     <main class="w-full">
         <div v-if="props.dataProfile.length === 0"
-            class="text-center mx-auto my-8 font-orbitron font-bold text-lg text-purple-300">
-            <Icon name="ph:user-minus-light" class="w-12 h-12 mx-auto mb-2 text-purple-200" />
+            class="text-center mx-auto my-8 font-orbitron font-bold text-lg text-purple-300 flex flex-col items-center">
+            <i class="bi bi-person-x-fill text-4xl mb-2 text-purple-200"></i>
             USER TIDAK ADA
         </div>
 
@@ -38,8 +38,8 @@ const props = defineProps({
                     </div>
                 </div>
 
-                <div class="text-purple-300 group-hover:text-purple-400 transition-colors">
-                    <Icon name="ph:arrow-square-out-bold" class="w-5 h-5" />
+                <div class="text-purple-300 group-hover:text-purple-400 transition-colors flex items-center">
+                    <i class="bi bi-box-arrow-up-right text-lg"></i>
                 </div>
             </NuxtLink>
         </div>

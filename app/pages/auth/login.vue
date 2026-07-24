@@ -1,6 +1,9 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { useToast } from '~/composables/useToast';
+
 const { $csrfFetch } = useNuxtApp();
+const toast = useToast();
 
 definePageMeta({
     layout: 'auth'
@@ -16,20 +19,22 @@ const form = reactive({
 
 const router = useRouter();
 const auth = useAuth();
+
 const login = async () => {
-    isLoading.value = true;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(form.email)) {
-        alert("Format email tidak valid.");
+        toast.warning("Format email tidak valid.", "Validasi Input");
         return;
     }
 
+    isLoading.value = true;
     try {
         await $csrfFetch('/api/auth/login', { method: 'POST', body: { email: form.email, password: form.password } })
         await auth.fetchSession()
+        toast.success("Selamat datang kembali di Yappr!", "Login Berhasil");
         router.push('/')
     } catch (e) {
-        alert(e.statusMessage || "Terjadi kesalahan saat login");
+        toast.error(e.statusMessage || "Terjadi kesalahan saat login", "Login Gagal");
     } finally {
         isLoading.value = false;
     }

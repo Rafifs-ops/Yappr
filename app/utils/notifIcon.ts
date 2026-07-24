@@ -1,14 +1,14 @@
 export function getIcon(type: string) {
     switch (type) {
-        case 'like': return 'streamline-ultimate:like-bold'
-        case 'comment': return 'streamline-ultimate:messages-bubble-square-typing-bold'
-        case 'reply': return 'streamline-ultimate:messages-people-person-bubble-circle-1-bold'
-        case 'repost': return 'streamline-ultimate:switch-account-1-bold'
-        case 'follow': return 'streamline-ultimate:following-1-bold'
-        case 'follow_request': return 'ph:user-plus-bold'
-        case 'follow_accept': return 'ph:check-circle-bold'
-        case 'mention': return 'streamline-ultimate:messages-people-user-bubble-circle-bold'
-        default: return 'streamline-ultimate:alert-bell-notification-2-bold'
+        case 'like': return 'bi-heart-fill'
+        case 'comment': return 'bi-chat-square-text-fill'
+        case 'reply': return 'bi-arrow-return-right'
+        case 'repost': return 'bi-repeat'
+        case 'follow': return 'bi-person-check-fill'
+        case 'follow_request': return 'bi-person-plus-fill'
+        case 'follow_accept': return 'bi-check-circle-fill'
+        case 'mention': return 'bi-at'
+        default: return 'bi-bell-fill'
     }
 }
 export function getIconColor(type: string) {

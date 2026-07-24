@@ -1,5 +1,9 @@
 <script setup>
+import { useToast } from '~/composables/useToast';
+
 const { $csrfFetch } = useNuxtApp();
+const toast = useToast();
+
 definePageMeta({
     layout: 'auth'
 })
@@ -20,14 +24,14 @@ function handleFileChange(event) {
     if (file) {
         const allowedTypes = ['image/jpeg', 'image/png'];
         if (!allowedTypes.includes(file.type)) {
-            alert('Format file wajib jpg, jpeg, dan png');
+            toast.warning('Format file wajib JPG, JPEG, atau PNG', 'Format File Error');
             event.target.value = '';
             return;
         }
 
         const maxSize = 5 * 1024 * 1024; // 5 MB
         if (file.size > maxSize) {
-            alert('Ukuran maksimal file adalah 5 MB');
+            toast.warning('Ukuran maksimal file adalah 5 MB', 'File Terlalu Besar');
             event.target.value = '';
             return;
         }
@@ -48,13 +52,13 @@ const isLoading = ref(false);
 async function handleRegister() {
     const usernameRegex = /^[a-z]{4,15}$/;
     if (!usernameRegex.test(dataRegister.value.username)) {
-        alert("Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter");
+        toast.warning("Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter", "Username Tidak Valid");
         return;
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(dataRegister.value.email)) {
-        alert("Format email tidak valid.");
+        toast.warning("Format email tidak valid.", "Email Tidak Valid");
         return;
     }
 
@@ -71,9 +75,10 @@ async function handleRegister() {
             body: { email: dataRegister.value.email, type: 'register' }
         });
 
+        toast.info(`Kode OTP telah dikirim ke ${dataRegister.value.email}`, 'Verifikasi Email');
         step.value = 2; // Pindah ke langkah verifikasi
     } catch (err) {
-        alert(err.statusMessage || "Terjadi kesalahan saat mendaftar");
+        toast.error(err.statusMessage || "Terjadi kesalahan saat mendaftar", "Pendaftaran Gagal");
     } finally {
         isLoading.value = false;
     }
@@ -86,9 +91,10 @@ async function handleVerifyOTP() {
             method: 'POST',
             body: { email: dataRegister.value.email, otp: otp.value, type: 'register' }
         })
+        toast.success("Akun berhasil terverifikasi! Selamat bergabung di Yappr.", "Pendaftaran Sukses");
         router.push('/');
     } catch (err) {
-        alert(err.statusMessage || "OTP tidak valid");
+        toast.error(err.statusMessage || "OTP tidak valid", "Verifikasi Gagal");
     } finally {
         isLoading.value = false;
     }

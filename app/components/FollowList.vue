@@ -69,8 +69,8 @@ const openFollowList = async (type) => {
                     {{ followListType === 'followers' ? 'FOLLOWERS' : 'FOLLOWING' }}
                 </h3>
                 <button @click="showFollowList = false"
-                    class="text-purple-400 hover:text-purple-300 transition-colors p-1 rounded-lg hover:bg-purple-800/30">
-                    <Icon name="streamline-ultimate:arrow-right-bold" class="w-5 h-5" />
+                    class="text-purple-400 hover:text-purple-300 transition-colors p-1 rounded-lg hover:bg-purple-800/30 flex items-center justify-center">
+                    <i class="bi bi-x-lg text-lg"></i>
                 </button>
             </div>
 

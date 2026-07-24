@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useToast } from '~/composables/useToast';
 
 export const useAuth = defineStore("auth", () => {
     const session = ref(null) // Membuat variable session
@@ -20,9 +21,11 @@ export const useAuth = defineStore("auth", () => {
     // Fungsi logout
     const signOut = async () => {
         const { $csrfFetch } = useNuxtApp();
-        await $csrfFetch('/api/auth/logout', { method: 'POST' })
-        session.value = null
-        await navigateTo('/auth/login')
+        const toast = useToast();
+        await $csrfFetch('/api/auth/logout', { method: 'POST' });
+        session.value = null;
+        toast.info('Anda telah keluar dari akun', 'Logout Berhasil');
+        await navigateTo('/auth/login');
     }
 
     return { session, fetchSession, signOut }

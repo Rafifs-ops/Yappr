@@ -9,19 +9,19 @@
                 :disabled="!editor.can().chain().focus().toggleBold().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('bold'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('bold') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Bold">
-                <Icon name="material-symbols:format-bold" class="w-4 h-4" />
+                <i class="bi bi-type-bold"></i>
             </button>
             <button @click="editor.chain().focus().toggleItalic().run()"
                 :disabled="!editor.can().chain().focus().toggleItalic().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('italic'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('italic') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Italic">
-                <Icon name="material-symbols:format-italic" class="w-4 h-4" />
+                <i class="bi bi-type-italic"></i>
             </button>
             <button @click="editor.chain().focus().toggleStrike().run()"
                 :disabled="!editor.can().chain().focus().toggleStrike().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('strike'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('strike') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Strikethrough">
-                <Icon name="material-symbols:format-strikethrough" class="w-4 h-4" />
+                <i class="bi bi-type-strikethrough"></i>
             </button>
 
             <div class="w-px h-5 bg-purple-800/50 mx-1"></div>
@@ -44,22 +44,22 @@
             <button @click="editor.chain().focus().toggleBulletList().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('bulletList'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('bulletList') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Bullet List">
-                <Icon name="material-symbols:format-list-bulleted" class="w-4 h-4" />
+                <i class="bi bi-list-ul"></i>
             </button>
             <button @click="editor.chain().focus().toggleOrderedList().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('orderedList'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('orderedList') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Ordered List">
-                <Icon name="material-symbols:format-list-numbered" class="w-4 h-4" />
+                <i class="bi bi-list-ol"></i>
             </button>
             <button @click="editor.chain().focus().toggleCodeBlock().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('codeBlock'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('codeBlock') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Code Block">
-                <Icon name="material-symbols:code-blocks-outline" class="w-4 h-4" />
+                <i class="bi bi-code-slash"></i>
             </button>
             <button @click="editor.chain().focus().toggleBlockquote().run()"
                 :class="{ 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]': editor.isActive('blockquote'), 'text-purple-300 hover:bg-purple-800/50 hover:text-purple-100': !editor.isActive('blockquote') }"
                 class="p-1.5 rounded-lg transition-all duration-200" title="Blockquote">
-                <Icon name="material-symbols:format-quote" class="w-4 h-4" />
+                <i class="bi bi-quote"></i>
             </button>
 
             <div class="w-px h-5 bg-purple-800/50 mx-1"></div>
@@ -68,7 +68,7 @@
             <button @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
                 class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all duration-200"
                 title="Clear Formatting">
-                <Icon name="material-symbols:format-clear" class="w-4 h-4" />
+                <i class="bi bi-eraser-fill"></i>
             </button>
 
             <div class="flex-grow"></div>
@@ -77,12 +77,12 @@
             <button @click="editor.chain().focus().undo().run()" :disabled="!editor.can().chain().focus().undo().run()"
                 class="p-1.5 rounded-lg text-purple-300 hover:bg-purple-800/50 hover:text-purple-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                 title="Undo">
-                <Icon name="material-symbols:undo" class="w-4 h-4" />
+                <i class="bi bi-arrow-counterclockwise"></i>
             </button>
             <button @click="editor.chain().focus().redo().run()" :disabled="!editor.can().chain().focus().redo().run()"
                 class="p-1.5 rounded-lg text-purple-300 hover:bg-purple-800/50 hover:text-purple-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                 title="Redo">
-                <Icon name="material-symbols:redo" class="w-4 h-4" />
+                <i class="bi bi-arrow-clockwise"></i>
             </button>
         </div>
 

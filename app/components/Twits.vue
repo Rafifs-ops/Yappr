@@ -108,8 +108,8 @@ onBeforeUnmount(() => {
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
             SEDANG MENGAMBIL TWIT...
         </div>
-        <div v-else-if="error" class="text-center p-8 text-rose-600 font-orbitron">
-            <Icon name="streamline-ultimate:alert-triangle-bold" class="w-8 h-8 mx-auto mb-2 animate-bounce" />
+        <div v-else-if="error" class="text-center p-8 text-rose-600 font-orbitron flex flex-col items-center">
+            <i class="bi bi-exclamation-triangle-fill text-3xl mb-2 animate-bounce"></i>
             TERJADI KESALAHAN...
         </div>
 
@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
 
             <!-- Elemen trigger untuk infinite scroll -->
             <div ref="loadMoreTrigger" class="w-full flex justify-center py-6">
-                <Icon v-if="loadingMore" name="svg-spinners:3-dots-fade" class="w-8 h-8 text-purple-500" />
+                <i v-if="loadingMore" class="bi bi-three-dots text-3xl text-purple-500 animate-pulse"></i>
             </div>
         </div>
     </main>

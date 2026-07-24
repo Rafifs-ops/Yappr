@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatDate } from '~/utils/formatDate';
 import DOMPurify from 'isomorphic-dompurify';
+import { useToast } from '~/composables/useToast';
 
 interface User {
     _id: string;
@@ -47,6 +48,8 @@ const emit = defineEmits<{
     (e: 'deleteTwit', id: string): void;
 }>();
 
+const toast = useToast();
+
 const shareTwit = async () => {
     // Buat URL absolut untuk twit ini
     const twitUrl = `${window.location.origin}/twit/${props.twit._id}`;
@@ -67,9 +70,9 @@ const shareTwit = async () => {
         // Fallback: Copy link ke clipboard untuk Desktop
         try {
             await navigator.clipboard.writeText(twitUrl);
-            alert('Tautan twit berhasil disalin ke clipboard!');
+            toast.success('Tautan twit berhasil disalin ke clipboard!', 'Tautan Disalin');
         } catch (err) {
-            console.error('Gagal menyalin tautan', err);
+            toast.error('Gagal menyalin tautan ke clipboard', 'Gagal');
         }
     }
 }
@@ -101,8 +104,8 @@ const shareTwit = async () => {
             </NuxtLink>
 
             <button v-if="twit.user?._id === currentUserId" @click="emit('deleteTwit', twit._id)"
-                class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1.5 rounded-lg bg-purple-900/30 border border-purple-800/50/50 transition-all">
-                <Icon name="streamline-ultimate:bin-1-bold" class="w-4 h-4" />
+                class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1.5 rounded-lg bg-purple-900/30 border border-purple-800/50/50 transition-all flex items-center justify-center">
+                <i class="bi bi-trash-fill text-sm"></i>
             </button>
         </div>
 
@@ -110,7 +113,7 @@ const shareTwit = async () => {
         <div v-if="twit.SubTwit?.isSubTwit" class="mb-3">
             <span
                 class="inline-flex items-center gap-1.5 font-mono text-[10px] text-purple-700 bg-purple-900/20 px-2.5 py-1 rounded border border-purple-700/50">
-                <Icon name="ph:arrow-bend-down-right" class="w-3.5 h-3.5" />
+                <i class="bi bi-arrow-return-right text-xs"></i>
                 Reply to <NuxtLink :to="`/twit/${twit?.SubTwit?.reference?._id}`"
                     class="font-bold text-purple-600 hover:underline hover:text-purple-800">@{{
                         twit?.SubTwit?.reference?.user?.username }}</NuxtLink>
@@ -152,9 +155,9 @@ const shareTwit = async () => {
                 :class="twit.isLiked
                     ? 'text-rose-600 bg-rose-50 border-rose-200 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
                     : 'text-purple-300 bg-purple-900/30 border-purple-800/40 hover:border-rose-400 hover:text-rose-600'">
-                <Icon name="streamline-ultimate:like-bold"
-                    :class="{ 'animate-ping absolute w-4 h-4 text-rose-500 opacity-20': twit.isLiked }" />
-                <Icon name="streamline-ultimate:like-bold" />
+                <i class="bi bi-heart-fill"
+                    :class="{ 'animate-ping absolute opacity-20': twit.isLiked }"></i>
+                <i class="bi bi-heart-fill"></i>
                 <span>{{ twit.likesCount }}</span>
             </button>
 
@@ -163,18 +166,18 @@ const shareTwit = async () => {
                 :class="twit.isReposted
                     ? 'text-purple-300 bg-blue-900 border-purple-700/50 shadow-[0_0_10px_rgba(2,132,199,0.08)]'
                     : 'text-purple-300 bg-purple-900/30 border-purple-800/40 hover:border-purple-400 hover:text-purple-600'">
-                <Icon name="streamline-ultimate:switch-account-1-bold" />
+                <i class="bi bi-repeat"></i>
                 <span>{{ twit.repostCount }}</span>
             </button>
 
             <button @click.prevent="shareTwit"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-400 hover:text-purple-600 text-xs font-mono transition-all duration-300">
-                <Icon name="streamline-ultimate:share" class="w-4 h-4" />
+                <i class="bi bi-share-fill text-xs"></i>
             </button>
 
             <NuxtLink :to="`/twit/${twit._id}`"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-xs font-mono transition-all duration-300">
-                <Icon name="streamline-ultimate:messages-bubble-square-typing-bold" />
+                <i class="bi bi-chat-square-text-fill text-xs"></i>
                 <span>{{ twit.commentCount || 0 }}</span>
             </NuxtLink>
         </div>

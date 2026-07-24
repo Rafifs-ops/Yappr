@@ -1,5 +1,8 @@
 <script setup>
+import { useToast } from '~/composables/useToast';
+
 const { $csrfFetch } = useNuxtApp();
+const toast = useToast();
 
 const content = ref('');
 
@@ -36,7 +39,7 @@ function onFileChange(e) {
         videoElement.onloadedmetadata = function () {
             // Cek jika durasi lebih dari 60 detik
             if (videoElement.duration > 60) {
-                alert('Durasi video terlalu panjang! Maksimal 1 menit (60 detik).');
+                toast.warning('Durasi video terlalu panjang! Maksimal 1 menit (60 detik).', 'Durasi Terlalu Panjang');
                 if (fileInput.value) fileInput.value.value = '';
                 URL.revokeObjectURL(videoUrl);
                 return;
@@ -51,7 +54,7 @@ function onFileChange(e) {
             URL.revokeObjectURL(videoUrl);
         });
     } else {
-        alert('Tolong pilih file gambar atau video');
+        toast.warning('Tolong pilih file gambar atau video', 'Format Tidak Sesuai');
         return;
     }
 }
@@ -78,7 +81,7 @@ async function handlePost() {
 
     const plainText = content.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
     if (!plainText) {
-        alert('Tolong isi twit');
+        toast.warning('Tolong isi twit terlebih dahulu', 'Konten Kosong');
         return;
     }
 
@@ -98,13 +101,12 @@ async function handlePost() {
             formData.append('video', videoFile.value);
         }
 
-        // $fetch (atau $csrfFetch) di Nuxt otomatis mendeteksi FormData 
-        // dan akan mengatur headers 'Content-Type': 'multipart/form-data' dengan sendirinya
         await $csrfFetch('/api/twits', {
             method: 'POST',
             body: formData
         });
 
+        toast.success('Twit berhasil dipublikasikan!', 'Berhasil');
         navigateTo('/profile');
     } catch (err) {
         const errorMap = {
@@ -113,8 +115,8 @@ async function handlePost() {
             413: 'File terlalu besar. Maksimal 50MB untuk image, 100MB untuk video.',
             500: 'Server sedang bermasalah. Coba lagi nanti.'
         };
-        const message = errorMap[err.statusCode] || err.statusMessage || 'Terjadi kesalahan';
-        alert(message);
+        const message = errorMap[err.statusCode] || err.statusMessage || 'Terjadi kesalahan saat memposting';
+        toast.error(message, 'Gagal Memposting');
     } finally {
         isUploading.value = false;
     }
@@ -135,7 +137,7 @@ async function handlePost() {
                 <div class="flex items-center space-x-3 border-b border-purple-800/40 pb-4">
                     <div
                         class="w-10 h-10 rounded-xl bg-purple-900/200/5 border border-purple-500/20 flex items-center justify-center text-purple-600 shadow-[0_0_12px_rgba(2,132,199,0.08)] animate-pulse">
-                        <Icon name="streamline-ultimate:content-paper-edit-bold" class="w-5 h-5" />
+                        <i class="bi bi-pencil-square text-xl"></i>
                     </div>
                     <div>
                         <h1 class="text-lg font-bold font-orbitron text-white tracking-wider glow-text-purple">
@@ -160,8 +162,8 @@ async function handlePost() {
                             class="absolute inset-0 bg-gradient-to-t from-slate-100/10 to-transparent pointer-events-none">
                         </div>
                         <button @click="removeImage"
-                            class="absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 p-2.5 rounded-xl text-white transition-all transform hover:scale-105 shadow-lg border border-rose-400/20">
-                            <Icon name="streamline-ultimate:bin-1-bold" class="w-4 h-4" />
+                            class="absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 p-2.5 rounded-xl text-white transition-all transform hover:scale-105 shadow-lg border border-rose-400/20 flex items-center justify-center">
+                            <i class="bi bi-trash-fill text-sm"></i>
                         </button>
                     </div>
 
@@ -170,8 +172,8 @@ async function handlePost() {
                         class="relative group/vid rounded-xl overflow-hidden border border-purple-800/50 shadow-sm mt-4">
                         <video :src="videoPreview" controls class="w-full h-auto max-h-96"></video>
                         <button @click="removeVideo"
-                            class="absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 p-2.5 rounded-xl text-white shadow-lg border border-rose-400/20">
-                            <Icon name="streamline-ultimate:bin-1-bold" class="w-4 h-4" />
+                            class="absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 p-2.5 rounded-xl text-white shadow-lg border border-rose-400/20 flex items-center justify-center">
+                            <i class="bi bi-trash-fill text-sm"></i>
                         </button>
                     </div>
 
@@ -181,7 +183,7 @@ async function handlePost() {
                                 class="hidden" />
                             <button @click="triggerFileInput"
                                 class="flex items-center space-x-2 btn-neon-purple py-2 px-4 rounded-md font-semibold">
-                                <Icon name="streamline-ultimate:picture-stack-landscape-bold" class="w-4 h-4" />
+                                <i class="bi bi-image-fill"></i>
                                 <span> ADD MEDIA</span>
                             </button>
                         </div>

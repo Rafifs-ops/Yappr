@@ -1,6 +1,8 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { useToast } from '~/composables/useToast';
 const { $csrfFetch } = useNuxtApp();
+const toast = useToast();
 
 definePageMeta({
     layout: 'default'
@@ -69,6 +71,15 @@ const toggleFollow = async () => {
                 following: userId
             }
         });
+
+        const targetUsername = response.value?.user?.username || 'user';
+        if (previousStatus) {
+            toast.info(`Berhenti mengikuti @${targetUsername}`, 'Batal Mengikuti');
+        } else if (isPrivate) {
+            toast.info(`Permintaan mengikuti dikirim ke @${targetUsername}`, 'Permintaan Terkirim');
+        } else {
+            toast.success(`Berhasil mengikuti @${targetUsername}!`, 'Mengikuti');
+        }
     } catch (err) {
         // ROLLBACK
         followStats.value.followStatus = previousStatus;
@@ -78,7 +89,7 @@ const toggleFollow = async () => {
         } else if (previousStatus === 'accepted') {
             followStats.value.followersCount += 1;
         }
-        alert(err.statusMessage || 'Gagal mengubah status follow');
+        toast.error(err.statusMessage || 'Gagal mengubah status follow', 'Aksi Gagal');
     }
 }
 
@@ -143,9 +154,7 @@ function toggleTabs(tab) {
                 <button v-if="auth.session?.id && auth.session.id !== userId" @click="toggleFollow"
                     :class="followStats.followStatus === 'pending' ? 'bg-purple-800/50 text-purple-300' : (followStats.isFollowing ? 'btn-neon-magenta' : 'btn-neon-purple')"
                     class="mt-2 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg flex items-center gap-1.5 transition-all">
-                    <Icon
-                        :name="followStats.followStatus === 'pending' ? 'ph:clock-bold' : (followStats.isFollowing ? 'ph:user-minus-bold' : 'ph:user-plus-bold')"
-                        class="w-4 h-4" />
+                    <i :class="['bi', followStats.followStatus === 'pending' ? 'bi-clock-history' : (followStats.isFollowing ? 'bi-person-dash-fill' : 'bi-person-plus-fill'), 'text-sm']"></i>
                     {{ followStats.followStatus === 'pending' ? 'REQUESTED' : (followStats.isFollowing ? 'UNFOLLOW' :
                         'FOLLOW') }}
                 </button>
@@ -170,7 +179,7 @@ function toggleTabs(tab) {
                 class="flex flex-col items-center justify-center py-16 px-4 bg-[#1a0b2e]/60 backdrop-blur-sm rounded-3xl border border-purple-800/40 text-center mx-auto w-full max-w-md">
                 <div
                     class="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-4 border border-purple-800/50 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
-                    <Icon name="streamline-ultimate:lock-shield-bold" class="w-10 h-10 text-purple-400" />
+                    <i class="bi bi-lock-fill text-4xl text-purple-400"></i>
                 </div>
                 <h3 class="font-orbitron font-bold text-lg text-purple-100 mb-2">Akun ini Privat</h3>
                 <p class="text-xs text-purple-300 font-mono leading-relaxed">

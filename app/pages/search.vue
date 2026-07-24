@@ -33,7 +33,7 @@ const dataProfile = computed(() => {
 <template>
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
-            <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
+            <i class="bi bi-arrow-repeat text-3xl animate-spin inline-block"></i>
         </div>
 
         <div v-else-if="error"
@@ -44,7 +44,7 @@ const dataProfile = computed(() => {
         <div v-else
             class="cyber-panel p-3.5 rounded-2xl border border-purple-800/50/80 flex items-center gap-3 bg-[#1a0b2e]/80 backdrop-blur-md/75 mb-6 group">
             <div class="text-purple-600 pl-2">
-                <Icon name="ph:radardecals-bold" class="w-5 h-5 animate-spin" style="animation-duration: 4s" />
+                <i class="bi bi-search text-lg"></i>
             </div>
             <input type="text"
                 class="bg-[#1a0b2e]/80 backdrop-blur-md border border-purple-800/50 text-white placeholder-purple-400/70 rounded-xl px-4 py-2.5 focus:outline-none w-full focus:border-purple-400 focus:shadow-[0_0_12px_rgba(2,132,199,0.12)] transition-all duration-300 font-mono text-sm"
@@ -63,11 +63,11 @@ const dataProfile = computed(() => {
             <div class="mt-8 border-t border-purple-800/30 pt-6">
                 <h2
                     class="font-orbitron text-purple-400 text-xs tracking-[0.2em] mb-4 flex items-center justify-center gap-2">
-                    <Icon name="ph:trend-up-bold" class="w-4 h-4" /> TRENDING MINGGU INI
+                    <i class="bi bi-graph-up-arrow"></i> TRENDING MINGGU INI
                 </h2>
 
                 <div v-if="pendingHashtags" class="flex justify-center mt-4">
-                    <Icon name="svg-spinners:3-dots-fade" class="w-6 h-6 text-purple-600" />
+                    <i class="bi bi-three-dots text-2xl text-purple-600 animate-pulse"></i>
                 </div>
 
                 <div v-else-if="trendingHashtags && trendingHashtags.length > 0"

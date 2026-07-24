@@ -53,7 +53,7 @@ function toggleTabs(tab) {
 <template>
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
-            <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
+            <i class="bi bi-arrow-repeat text-3xl animate-spin inline-block"></i>
         </div>
 
         <div v-else-if="error || !auth.session?.id"
@@ -88,12 +88,12 @@ function toggleTabs(tab) {
                 <div class="flex space-x-2">
                     <button @click="auth.signOut"
                         class="btn-neon-magenta text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5">
-                        <Icon name="ph:power-bold" class="w-4 h-4" />
+                        <i class="bi bi-power text-sm"></i>
                         LOGOUT
                     </button>
                     <NuxtLink to="/profile/edit"
-                        class="bg-cyan-400 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5">
-                        <Icon name="streamline-ultimate:single-neutral-actions-edit-2-bold" class="w-4 h-4" />
+                        class="bg-cyan-400 text-[10px] font-orbitron font-bold tracking-widest py-2.5 px-6 rounded-xl shadow-lg mt-5 flex items-center gap-1.5 text-black">
+                        <i class="bi bi-pencil-fill text-sm"></i>
                         EDIT PROFILE
                     </NuxtLink>
                 </div>

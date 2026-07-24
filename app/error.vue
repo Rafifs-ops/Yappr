@@ -13,7 +13,7 @@ const handleError = () => clearError({ redirect: '/' })
     <div class="bg-[#1a0b2e]/80 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-xl max-w-lg w-full text-center border-t-8 border-purple-600">
 
       <div class="flex justify-center mb-6 text-purple-600">
-        <Icon name="streamline-ultimate:alert-octagon-1-bold" class="w-20 h-20 animate-bounce" />
+        <i class="bi bi-exclamation-octagon-fill text-6xl animate-bounce"></i>
       </div>
 
       <h1 class="text-7xl font-extrabold text-white mb-2 tracking-tighter">
@@ -34,7 +34,7 @@ const handleError = () => clearError({ redirect: '/' })
 
       <button @click="handleError"
         class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 active:scale-95">
-        <Icon name="streamline-ultimate:house-4-bold" class="w-5 h-5" />
+        <i class="bi bi-house-fill"></i>
         <span>Kembali ke Beranda</span>
       </button>
 

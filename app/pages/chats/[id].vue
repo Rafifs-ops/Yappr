@@ -93,8 +93,8 @@ const formatDate = (dateString) => {
         <!-- Header -->
         <div class="flex items-center p-4 border-b border-white/10 bg-black/60 shadow-md">
             <NuxtLink to="/chats"
-                class="text-gray-400 hover:text-white transition-colors mr-3 p-1 rounded-full hover:bg-white/10">
-                <Icon name="mdi:arrow-left" class="w-6 h-6" />
+                class="text-gray-400 hover:text-white transition-colors mr-3 p-1.5 rounded-full hover:bg-white/10 flex items-center justify-center">
+                <i class="bi bi-arrow-left text-xl"></i>
             </NuxtLink>
             <div class="flex-1">
                 <h1 class="text-xl font-bold text-white tracking-wide">Room Chat</h1>
@@ -104,7 +104,7 @@ const formatDate = (dateString) => {
         <!-- Messages Area -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
             <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-500">
-                <Icon name="mdi:chat-processing-outline" class="w-16 h-16 mb-2 opacity-50" />
+                <i class="bi bi-chat-dots-fill text-5xl mb-2 opacity-50"></i>
                 <p>Mulai obrolan sekarang!</p>
             </div>
 
@@ -143,7 +143,7 @@ const formatDate = (dateString) => {
 
                 <button type="submit" :disabled="!newMessage.trim()"
                     class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white p-3 rounded-full flex items-center justify-center transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.4)]">
-                    <Icon name="mdi:send" class="w-5 h-5 ml-1" />
+                    <i class="bi bi-send-fill text-lg"></i>
                 </button>
             </form>
         </div>

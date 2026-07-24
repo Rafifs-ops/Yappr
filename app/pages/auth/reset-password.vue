@@ -1,5 +1,9 @@
 <script setup>
+import { useToast } from '~/composables/useToast';
+
 const { $csrfFetch } = useNuxtApp();
+const toast = useToast();
+
 definePageMeta({
     layout: 'auth'
 })
@@ -17,10 +21,11 @@ async function handleRequestOTP() {
         await $csrfFetch('/api/send-otp', {
             method: 'POST',
             body: { email: email.value, type: 'reset_password' }
-        })
+        });
+        toast.info(`Kode OTP telah dikirim ke ${email.value}`, 'OTP Terkirim');
         step.value = 2;
     } catch (err) {
-        alert(err.statusMessage || "Terjadi kesalahan");
+        toast.error(err.statusMessage || "Terjadi kesalahan saat pengiriman OTP", "Pengiriman Gagal");
     } finally {
         isLoading.value = false;
     }
@@ -32,11 +37,11 @@ async function handleResetPassword() {
         await $csrfFetch('/api/reset-password', {
             method: 'POST',
             body: { email: email.value, otp: otp.value, newPassword: newPassword.value }
-        })
-        alert("Password berhasil diubah. Silakan login.");
+        });
+        toast.success("Password berhasil diubah. Silakan login.", "Reset Password Sukses");
         router.push('/auth/login');
     } catch (err) {
-        alert(err.statusMessage || "Terjadi kesalahan");
+        toast.error(err.statusMessage || "Terjadi kesalahan saat mengubah password", "Reset Password Gagal");
     } finally {
         isLoading.value = false;
     }

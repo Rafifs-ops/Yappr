@@ -1,11 +1,13 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { useToast } from '~/composables/useToast';
 import { getIcon, getIconColor } from '~/utils/notifIcon';
 import { formatDate } from '~/utils/formatDate';
 import DOMPurify from 'isomorphic-dompurify';
 
 const { $csrfFetch } = useNuxtApp();
 const auth = useAuth();
+const toast = useToast();
 
 definePageMeta({
     layout: 'default'
@@ -36,9 +38,10 @@ const handleRequest = async (notif, action) => {
                 following: auth.session.id
             }
         });
+        toast.success(action === 'accept' ? 'Permintaan mengikuti diterima' : 'Permintaan mengikuti ditolak', 'Permintaan Ikuti');
         refreshNuxtData('notifications-data');
     } catch (err) {
-        alert(err.statusMessage || 'Gagal memproses permintaan');
+        toast.error(err.statusMessage || 'Gagal memproses permintaan', 'Gagal');
     }
 }
 </script>
@@ -73,7 +76,7 @@ const handleRequest = async (notif, action) => {
                 <!-- Icon Background -->
                 <div
                     :class="['flex-shrink-0 w-12 h-12 rounded-xl border border-purple-800/40 flex items-center justify-center bg-purple-900/20 shadow-inner', getIconColor(notif.type)]">
-                    <Icon :name="getIcon(notif.type)" size="20" />
+                    <i :class="['bi', getIcon(notif.type), 'text-lg']"></i>
                 </div>
 
                 <!-- Content -->
@@ -127,7 +130,7 @@ const handleRequest = async (notif, action) => {
             class="flex flex-col items-center justify-center py-20 text-center bg-[#1a0b2e]/80 backdrop-blur-md/40 rounded-3xl border border-purple-800/40">
             <div
                 class="w-16 h-16 bg-purple-900/20 border border-purple-800/40 rounded-2xl flex items-center justify-center mb-4 text-purple-400 shadow-inner">
-                <Icon name="ph:bell-slash-light" size="32" class="animate-pulse" />
+                <i class="bi bi-bell-slash-fill text-3xl animate-pulse"></i>
             </div>
             <h2 class="font-orbitron font-bold text-purple-100 text-sm tracking-wider">BELUM ADA NOTIFIKASI</h2>
         </div>

@@ -1,7 +1,9 @@
 <script setup>
 import { useAuth } from '../stores/Auth';
+import { useToast } from '~/composables/useToast';
 import DOMPurify from 'isomorphic-dompurify';
 const auth = useAuth();
+const toast = useToast();
 const { $csrfFetch } = useNuxtApp();
 const props = defineProps(['twitId', 'comments']);
 
@@ -10,18 +12,18 @@ const newComment = ref('');
 const isSubmitting = ref(false);
 
 const submitComment = async () => {
+    const plainText = newComment.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+    if (!plainText) {
+        toast.warning('Tolong isi komentar terlebih dahulu', 'Komentar Kosong');
+        return;
+    }
+
     isSubmitting.value = true;
 
     const regex = /#[a-zA-Z0-9_]+/g;
     const hashtags = newComment.value.match(regex) || [];
     const cleanHashtags = hashtags.map(tag => tag.replace("#", ""));
     const finalText = newComment.value.replace(regex, '').replace(/\s+/g, " ").trim();
-
-    const plainText = newComment.value.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
-    if (!plainText) {
-        alert('Tolong isi twit');
-        return;
-    }
 
     try {
         // Beralih menggunakan FormData
@@ -36,10 +38,11 @@ const submitComment = async () => {
         });
 
         newComment.value = '';
+        toast.success('Komentar berhasil dikirim!', 'Balasan Terkirim');
         emit('refresh'); // Memuat ulang daftar komentar
     } catch (e) {
-        alert(e.statusMessage);
-        return
+        toast.error(e.statusMessage || 'Gagal mengirim komentar', 'Gagal');
+        return;
     } finally {
         isSubmitting.value = false;
     }
@@ -51,14 +54,14 @@ const deleteComment = async (commentId) => {
             method: 'DELETE',
             body: { twitId: commentId }
         });
+        toast.success('Komentar berhasil dihapus!', 'Hapus Komentar');
         emit('refresh');
     } catch (e) {
-        alert(e.statusMessage || 'Gagal menghapus komentar');
+        toast.error(e.statusMessage || 'Gagal menghapus komentar', 'Gagal');
     }
 };
 
 async function toggleLike(twitId) {
-
     // Cari index twit yang diklik di dalam state lokal kita
     const index = props.comments.findIndex(t => t._id === twitId);
     if (index === -1) return;
@@ -85,7 +88,7 @@ async function toggleLike(twitId) {
         targetTwit.isLiked = previousIsLiked;
         targetTwit.isLiked ? targetTwit.likesCount++ : targetTwit.likesCount--;
 
-        alert(err.statusMessage || 'Gagal mengubah status like');
+        toast.error(err.statusMessage || 'Gagal mengubah status like', 'Like Gagal');
     }
 }
 </script>
@@ -124,8 +127,8 @@ async function toggleLike(twitId) {
                     </span>
                 </div>
                 <button v-if="comment.user?._id === auth.session?.id" @click="deleteComment(comment._id)"
-                    class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1 rounded-lg bg-purple-900/30/50 border border-purple-800/50/50 transition-all">
-                    <Icon name="streamline-ultimate:bin-1-bold" class="w-3.5 h-3.5" />
+                    class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1 rounded-lg bg-purple-900/30/50 border border-purple-800/50/50 transition-all flex items-center justify-center">
+                    <i class="bi bi-trash-fill text-xs"></i>
                 </button>
             </div>
 
@@ -146,13 +149,13 @@ async function toggleLike(twitId) {
                     :class="comment.isLiked
                         ? 'text-rose-600 bg-rose-50 border-rose-200 shadow-[0_0_8px_rgba(244,63,94,0.06)]'
                         : 'text-slate-505 bg-purple-900/30 border-purple-800/40 hover:border-rose-400 hover:text-rose-600'">
-                    <Icon name="streamline-ultimate:like-bold" />
+                    <i class="bi bi-heart-fill"></i>
                     <span>{{ comment.likesCount }}</span>
                 </button>
 
                 <NuxtLink :to="`/twit/${comment._id}`"
                     class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-[10px] font-mono transition-all duration-300">
-                    <Icon name="streamline-ultimate:messages-bubble-square-typing-bold" />
+                    <i class="bi bi-chat-square-text-fill"></i>
                     <span>{{ comment.commentCount || 0 }}</span>
                 </NuxtLink>
             </div>

@@ -1,9 +1,12 @@
 <script setup>
 import { useAuth } from '../../stores/Auth';
+import { useToast } from '~/composables/useToast';
 import DOMPurify from 'isomorphic-dompurify';
-const auth = useAuth();
 
+const auth = useAuth();
+const toast = useToast();
 const { $csrfFetch } = useNuxtApp();
+
 definePageMeta({
     layout: 'default'
 })
@@ -72,7 +75,7 @@ async function toggleLike() {
         targetTwit.isLiked = previousIsLiked;
         targetTwit.isLiked ? targetTwit.likesCount++ : targetTwit.likesCount--;
 
-        alert(err.statusMessage || 'Gagal mengubah status like');
+        toast.error(err.statusMessage || 'Gagal mengubah status like', 'Like Gagal');
     }
 }
 
@@ -83,9 +86,10 @@ const deleteMainTwit = async () => {
             method: 'DELETE',
             body: { twitId: data.value.response._id }
         });
+        toast.success('Twit berhasil dihapus', 'Hapus Twit');
         navigateTo('/');
     } catch (e) {
-        alert(e.statusMessage || 'Gagal menghapus twit');
+        toast.error(e.statusMessage || 'Gagal menghapus twit', 'Hapus Gagal');
     }
 };
 </script>
@@ -93,7 +97,7 @@ const deleteMainTwit = async () => {
 <template>
     <main class="w-full max-w-xl mx-auto py-4">
         <div v-if="pending" class="text-center p-8 text-purple-600 font-orbitron animate-pulse">
-            <Icon name="svg-spinners:ring-resize" class="w-8 h-8 mx-auto mb-2" />
+            <i class="bi bi-arrow-repeat text-3xl mx-auto mb-2 animate-spin block"></i>
             SEDANG MEMUAT TWIT...
         </div>
         <div v-else-if="error"
@@ -111,7 +115,7 @@ const deleteMainTwit = async () => {
             <div v-if="data.response.SubTwit?.isSubTwit" class="mb-1">
                 <span
                     class="inline-flex items-center gap-1.5 font-mono text-[10px] text-purple-700 bg-purple-900/20 px-2.5 py-1 rounded border border-purple-700/50">
-                    <Icon name="ph:arrow-bend-down-right" class="w-3.5 h-3.5" />
+                    <i class="bi bi-arrow-return-right text-xs"></i>
                     Reply to <NuxtLink :to="`/twit/${data.response?.SubTwit?.reference?._id}`"
                         class="font-bold text-purple-600 hover:underline">@{{
                             data.response?.SubTwit?.reference?.user?.username }}</NuxtLink>
@@ -139,8 +143,8 @@ const deleteMainTwit = async () => {
                     </NuxtLink>
 
                     <button v-if="data.response?.user?._id === auth.session?.id" @click="deleteMainTwit"
-                        class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1.5 rounded-lg bg-purple-900/30 border border-purple-800/50/50 transition-all">
-                        <Icon name="streamline-ultimate:bin-1-bold" class="w-4 h-4" />
+                        class="text-purple-400 hover:text-rose-500 hover:shadow-[0_0_8px_rgba(244,63,94,0.1)] p-1.5 rounded-lg bg-purple-900/30 border border-purple-800/50/50 transition-all flex items-center justify-center">
+                        <i class="bi bi-trash-fill text-sm"></i>
                     </button>
                 </div>
 
@@ -167,13 +171,13 @@ const deleteMainTwit = async () => {
                         :class="data.response.isLiked
                             ? 'text-rose-600 bg-rose-50 border-rose-200 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
                             : 'text-purple-300 bg-purple-900/30 border-purple-800/40 hover:border-rose-400 hover:text-rose-600'">
-                        <Icon name="streamline-ultimate:like-bold" />
+                        <i class="bi bi-heart-fill"></i>
                         <span>{{ data.response.likesCount }}</span>
                     </button>
 
                     <div
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 text-xs font-mono">
-                        <Icon name="streamline-ultimate:messages-bubble-square-typing-bold" />
+                        <i class="bi bi-chat-square-text-fill"></i>
                         <span>{{ data.response.commentCount || 0 }}</span>
                     </div>
                 </div>

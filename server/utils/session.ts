@@ -3,12 +3,14 @@ import { prisma } from "./prisma";
 
 // mengambil session
 export const session = async (event: any) => {
-    let token = getCookie(event, 'auth_token');
-    const refreshTokenCookie = getCookie(event, 'refresh_token');
+    let token = getCookie(event, 'auth_token'); // Mengambil token dari cookie
+    const refreshTokenCookie = getCookie(event, 'refresh_token'); // Mengambil refresh token dari cookie
 
     // mengambil JWT Secret dari environment variable
     const config = useRuntimeConfig();
     const secretAuthKey = config.jwtSecret;
+
+    // Validasi JWT Secret apakah terdaftar atau tidak
     if (!secretAuthKey) {
         throw createError({
             statusCode: 500,
@@ -16,57 +18,61 @@ export const session = async (event: any) => {
         });
     }
 
+    // Validasi apakah token atau refresh token terdaftar atau tidak
     if (!token && !refreshTokenCookie) {
-        console.error('Session Error: No token and no refresh token cookie');
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
 
     let decodedToken: any = null;
 
+    // Validasi token
     if (token) {
         try {
             decodedToken = jwt.verify(token, secretAuthKey as string) as any;
         } catch (error: any) {
+            // Jika token expired maka akan lanjut ke validasi refresh token
             if (error.name === 'TokenExpiredError') {
-                decodedToken = null; // Let it fallback to refresh token
+                decodedToken = null; // Biarkan lanjut ke validasi refresh token
             } else {
-                console.error('Session Error: Token invalid', error);
-                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+                deleteCookie(event, 'auth_token', { path: '/' }); // Menghapus cookie auth_token
+                deleteCookie(event, 'refresh_token', { path: '/' }); // Menghapus cookie refresh_token
+                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' }); // Menampilkan error jika tidak dapat login
             }
         }
     }
 
+    // Jika token expired maka akan mengambil refresh token
     if (!decodedToken && refreshTokenCookie) {
         try {
-            const decodedRefresh = jwt.verify(refreshTokenCookie, secretAuthKey as string) as any;
-            const user = await prisma.user.findUnique({ where: { id: decodedRefresh.userId } });
+            const decodedRefresh = jwt.verify(refreshTokenCookie, secretAuthKey as string) as any; // Verifikasi refresh token
+            const user = await prisma.user.findUnique({ where: { id: decodedRefresh.id } }); // Mengambil user berdasarkan refresh token
 
-            if (!user) {
-                console.error('Session Error: User not found for refresh token');
-                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
-            }
-            if (user.refreshToken !== refreshTokenCookie) {
-                console.error('Session Error: Refresh token mismatch. DB:', user.refreshToken, 'Cookie:', refreshTokenCookie);
-                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+            // Jika user tidak ada dan refresh token tidak cocok maka akan menghapus cookie dan menampilkan error
+            if (!user || user.refreshToken !== refreshTokenCookie) {
+                deleteCookie(event, 'auth_token', { path: '/' }); // Menghapus cookie auth_token
+                deleteCookie(event, 'refresh_token', { path: '/' }); // Menghapus cookie refresh_token
+                throw createError({ statusCode: 401, statusMessage: 'Unauthorized' }); // Menampilkan error jika tidak dapat login
             }
 
-            // Issue new access token and rotate refresh token
-            const payload = { userId: user.id };
-            token = jwt.sign(payload, secretAuthKey as string, { expiresIn: '15m' });
-            const newRefreshToken = jwt.sign(payload, secretAuthKey as string, { expiresIn: '7d' });
+            // Membuat token dan refresh token baru
+            const payload = user;
+            token = jwt.sign(payload, secretAuthKey as string, { expiresIn: '15m' }); // Membuat token baru
+            const newRefreshToken = jwt.sign(payload, secretAuthKey as string, { expiresIn: '7d' }); // Membuat refresh token baru
 
+            // Menyimpan refresh token baru ke database
             await prisma.user.update({
                 where: { id: user.id },
                 data: { refreshToken: newRefreshToken }
             });
 
+            // Menyimpan token baru ke cookie
             setCookie(event, 'auth_token', token, {
                 maxAge: 60 * 15,  // 15 menit
                 httpOnly: true,
                 secure: true,
                 path: '/',
             });
-
+            // Menyimpan refresh token baru ke cookie
             setCookie(event, 'refresh_token', newRefreshToken, {
                 maxAge: 60 * 60 * 24 * 7,  // 7 hari
                 httpOnly: true,
@@ -74,30 +80,35 @@ export const session = async (event: any) => {
                 path: '/',
             });
 
-            decodedToken = payload;
+            decodedToken = payload; // Mengisi DecodedToken dengan payload baru
         } catch (error) {
-            console.error('Session Error: Refresh token verification failed', error);
-            throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+            deleteCookie(event, 'auth_token', { path: '/' }); // Menghapus cookie auth_token
+            deleteCookie(event, 'refresh_token', { path: '/' }); // Menghapus cookie refresh_token
+            throw createError({ statusCode: 401, statusMessage: 'Unauthorized' }); // Menampilkan error jika tidak dapat login
         }
     }
 
     if (!decodedToken) {
-        console.error('Session Error: No decoded token available');
+        deleteCookie(event, 'auth_token', { path: '/' });
+        deleteCookie(event, 'refresh_token', { path: '/' });
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
 
     try {
-        const user = await prisma.user.findUnique({ where: { id: decodedToken.userId } });
-        if (!user) throw new Error();
+        // Periksa apakah user masih ada di database ?
+        const user = await prisma.user.findUnique({ where: { id: decodedToken.id } });
 
-        return {
-            id: user.id,
-            username: user.username,
-            photo: user.photo,
-            email: user.email,
-            bio: user.bio,
-        };
+        // Jika user tidak ada maka akan menghapus cookie dan menampilkan error
+        if (!user) {
+            deleteCookie(event, 'auth_token', { path: '/' }); // Menghapus cookie auth_token
+            deleteCookie(event, 'refresh_token', { path: '/' }); // Menghapus cookie refresh_token
+            throw new Error(); // Menampilkan error jika tidak dapat login
+        }
+
+        return decodedToken;
     } catch (error) {
+        deleteCookie(event, 'auth_token', { path: '/' });
+        deleteCookie(event, 'refresh_token', { path: '/' });
         throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
     }
 };

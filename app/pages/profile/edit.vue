@@ -1,8 +1,10 @@
 <script setup>
 import { useAuth } from '~/stores/Auth';
+import { useToast } from '~/composables/useToast';
 import { onUnmounted } from 'vue';
 
 const auth = useAuth();
+const toast = useToast();
 const router = useRouter();
 const { $csrfFetch } = useNuxtApp();
 
@@ -50,6 +52,7 @@ function handleFileChange(event) {
             text: 'Harap pilih file gambar',
             isError: true
         };
+        toast.warning('Harap pilih file gambar', 'Format Invalid');
         return;
     }
 
@@ -59,6 +62,7 @@ function handleFileChange(event) {
             text: 'Ukuran file maksimal 5MB',
             isError: true
         };
+        toast.warning('Ukuran file maksimal 5MB', 'File Terlalu Besar');
         return;
     }
 
@@ -100,6 +104,7 @@ async function handleUpdate() {
             text: 'Profil berhasil diperbarui!',
             isError: false
         };
+        toast.success('Profil berhasil diperbarui!', 'Update Berhasil');
 
         // Kembali ke halaman profil setelah 2 detik
         redirectTimer = setTimeout(() => {
@@ -107,11 +112,13 @@ async function handleUpdate() {
         }, 2000);
 
     } catch (e) {
+        const errMsg = e.data?.message || 'Gagal memperbarui profil';
         message.value = {
             show: true,
-            text: e.data?.message || 'Gagal memperbarui profil',
+            text: errMsg,
             isError: true
         };
+        toast.error(errMsg, 'Update Gagal');
     }
 }
 
@@ -132,8 +139,8 @@ watch(profile, (newData) => {
 
             <!-- Header -->
             <div class="w-full flex justify-between items-center mb-6">
-                <button @click="$router.back()" class="p-2 hover:bg-purple-800/50 rounded-full transition-colors">
-                    <Icon name="streamline-ultimate:arrow-thick-circle-left-2" class="w-5 h-5 text-purple-400" />
+                <button @click="$router.back()" class="p-2 hover:bg-purple-800/50 rounded-full transition-colors flex items-center justify-center">
+                    <i class="bi bi-arrow-left-circle-fill text-xl text-purple-400"></i>
                 </button>
                 <h1 class="font-orbitron text-lg text-purple-600">EDIT PROFILE</h1>
                 <div class="w-8"></div>
@@ -149,13 +156,13 @@ watch(profile, (newData) => {
 
             <!-- Loading State -->
             <div v-if="pending" class="p-8 text-center text-purple-600 font-orbitron">
-                <Icon name="streamline-ultimate:loading" class="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                <i class="bi bi-arrow-repeat text-3xl mx-auto mb-2 animate-spin block"></i>
                 LOADING...
             </div>
 
             <!-- Error State -->
             <div v-else-if="error || !auth.session?.id" class="p-8 text-center text-rose-600 font-orbitron">
-                <Icon name="streamline-ultimate:alert-octagon-1" class="w-8 h-8 mx-auto mb-2 animate-bounce" />
+                <i class="bi bi-exclamation-octagon-fill text-3xl mx-auto mb-2 animate-bounce block"></i>
                 ERROR: {{ error ? error.statusMessage : "ID TIDAK DITEMUKAN" }}
             </div>
 
@@ -170,9 +177,8 @@ watch(profile, (newData) => {
                         <img :src="photoPreview || profile?.user?.photo" alt="Avatar"
                             class="rounded-full w-24 h-24 object-cover aspect-square border-4 border-white">
                         <button @click="triggerFileInput" type="button"
-                            class="absolute bottom-0 right-0 p-1.5 bg-black rounded-full border border-purple-500 hover:scale-110 transition-transform">
-                            <Icon name="streamline-ultimate:allowances-no-photos-bold"
-                                class="w-4 h-4 text-purple-400" />
+                            class="absolute bottom-0 right-0 p-1.5 bg-black rounded-full border border-purple-500 hover:scale-110 transition-transform flex items-center justify-center">
+                            <i class="bi bi-camera-fill text-sm text-purple-400"></i>
                         </button>
                     </div>
                     <p class="text-xs text-purple-400 font-orbitron cursor-pointer hover:text-purple-300"
@@ -186,8 +192,8 @@ watch(profile, (newData) => {
                         <input type="text" v-model="form.username" :disabled="pending"
                             class="cyber-input w-full pl-10 pr-4 py-3 bg-transparent border-purple-500/30 text-white rounded-xl focus:border-purple-400 focus:ring-0"
                             placeholder="Masukkan username Anda">
-                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500">
-                            <Icon name="streamline-ultimate:single-neutral-circle-bold" class="w-5 h-5" />
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500 flex items-center">
+                            <i class="bi bi-person-fill text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -200,8 +206,8 @@ watch(profile, (newData) => {
                         <textarea v-model="form.bio" :disabled="pending" rows="3"
                             class="cyber-input w-full pl-10 pr-4 py-3 bg-transparent border-purple-500/30 text-white rounded-xl focus:border-purple-400 focus:ring-0 resize-none"
                             placeholder="Ceritakan tentang diri Anda..."></textarea>
-                        <div class="absolute left-3 top-3 text-purple-500">
-                            <Icon name="streamline-ultimate:programming-user-chat" class="w-5 h-5" />
+                        <div class="absolute left-3 top-3 text-purple-500 flex items-center">
+                            <i class="bi bi-card-text text-lg"></i>
                         </div>
                         <div class="absolute right-3 bottom-3 text-xs text-purple-700 font-mono">
                             {{ form.bio.length }} / 250

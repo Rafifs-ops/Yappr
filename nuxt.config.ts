@@ -3,7 +3,6 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: [
-    '@nuxt/icon',
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
@@ -27,8 +26,7 @@ export default defineNuxtConfig({
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS,
-    tursoDatabaseUrl: process.env.DATABASE_TURSO_DATABASE_URL || process.env.NUXT_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL,
-    tursoAuthToken: process.env.DATABASE_TURSO_AUTH_TOKEN || process.env.NUXT_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN,
+    databaseUrl: process.env.DATABASE_URL,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -63,6 +61,7 @@ export default defineNuxtConfig({
     },
   },
   css: [
+    'bootstrap-icons/font/bootstrap-icons.css',
     '~/assets/css/main.css'
   ],
   nitro: {
@@ -75,6 +74,11 @@ export default defineNuxtConfig({
       include: [
         '@vue/devtools-core',
         '@vue/devtools-kit',
+        'isomorphic-dompurify',
+        '@tiptap/vue-3',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-mention',
+        'tippy.js',
       ]
     }
   }
