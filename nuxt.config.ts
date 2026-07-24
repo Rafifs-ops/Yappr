@@ -27,8 +27,8 @@ export default defineNuxtConfig({
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS,
-    tursoDatabaseUrl: process.env.DATABASE_TURSO_DATABASE_URL,
-    tursoAuthToken: process.env.DATABASE_TURSO_AUTH_TOKEN,
+    tursoDatabaseUrl: process.env.DATABASE_TURSO_DATABASE_URL || process.env.NUXT_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL,
+    tursoAuthToken: process.env.DATABASE_TURSO_AUTH_TOKEN || process.env.NUXT_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

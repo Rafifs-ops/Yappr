@@ -5,10 +5,22 @@ import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
 const config = useRuntimeConfig()
 
+const tursoUrl = (config.tursoDatabaseUrl as string)
+    || process.env.DATABASE_TURSO_DATABASE_URL
+    || process.env.NUXT_TURSO_DATABASE_URL
+    || process.env.TURSO_DATABASE_URL
+    || ''
+
+const tursoAuthToken = (config.tursoAuthToken as string)
+    || process.env.DATABASE_TURSO_AUTH_TOKEN
+    || process.env.NUXT_TURSO_AUTH_TOKEN
+    || process.env.TURSO_AUTH_TOKEN
+    || ''
+
 // Inisialisasi koneksi libSQL (Turso)
 const libsql = createClient({
-    url: config.tursoDatabaseUrl,
-    authToken: config.tursoAuthToken,
+    url: tursoUrl,
+    authToken: tursoAuthToken,
 })
 
 // Pasang adapter ke Prisma
