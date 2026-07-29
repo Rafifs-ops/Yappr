@@ -1,10 +1,12 @@
 import { session } from "../../utils/session";
 import { prisma } from "../../utils/prisma";
+import { OutgoingMessage } from "http";
 
 export default defineEventHandler(async (event) => {
     try {
-        const auth = await session(event);
+        const auth = await session(event); // Mengambil data client yang login
 
+        // Mengambil data-data chat(room chat) dimana user menjadi memberChat di beberapa room chat
         const memberChats = await prisma.memberChat.findMany({
             where: { userId: auth.id },
             include: {
@@ -14,11 +16,13 @@ export default defineEventHandler(async (event) => {
 
         const chatList = [];
 
+        // Looping data chat yang didapat
         for (const mc of memberChats) {
             const chat = mc.chat;
             if (!chat) continue;
 
-            const otherMembers = await prisma.memberChat.findMany({
+            // Mencari member lain selain user yang login
+            const otherMembers: any = await prisma.memberChat.findMany({
                 where: {
                     conversationId: chat.id,
                     NOT: { userId: auth.id }
@@ -28,10 +32,12 @@ export default defineEventHandler(async (event) => {
                 }
             });
 
+            // Mengambil nama chat, foto, dan user lain
             let chatName = chat.name;
             let chatPhoto = null;
             let otherUserId = null;
 
+            // Jika ada member lain
             if (otherMembers.length > 0) {
                 const otherUser = otherMembers[0].user;
                 if (!chatName || chatName === 'Direct Message') {
@@ -41,6 +47,7 @@ export default defineEventHandler(async (event) => {
                 otherUserId = otherUser.id;
             }
 
+            // Mengambil pesan terakhir
             const latestMessage = await prisma.message.findFirst({
                 where: { chatId: chat.id },
                 orderBy: { createdAt: 'desc' },
@@ -49,6 +56,7 @@ export default defineEventHandler(async (event) => {
                 }
             });
 
+            // Memasukkan data chat ke dalam array chatList
             chatList.push({
                 _id: chat.id,
                 name: chatName,
@@ -63,9 +71,10 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // Mengurutkan data chat berdasarkan pesan terakhir
         chatList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-        return chatList;
+        return chatList; // output:  [{_id, name, photo, otherUserId, latestMessage, updatedAt}]
     } catch (error) {
         throw createError({
             statusCode: 500,

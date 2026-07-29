@@ -5,27 +5,35 @@ export default defineEventHandler(async (event) => {
     const data = await readBody(event); // Mengambil data body request
     const photo = event.context.photo; // Mengambil photo dari event context
 
+    const username = data.username?.trim().toLowerCase(); // Mengambil data username dari body request dan mengubahnya menjadi huruf kecil
+    const email = data.email?.trim().toLowerCase(); // Mengambil data email dari body request dan mengubahnya menjadi huruf kecil
+    const { password, bio } = data; // Mengambil data password dan bio dari body request
+
     // Validasi data request apakah sudah lengkap atau belum
-    if (!data.username && !data.password && !data.email && !data.bio) {
+    if (!username && !password && !email && !bio) {
         throw createError({ statusCode: 400, statusMessage: 'data belum lengkap' });
     }
 
     // Validasi format username
     const usernameRegex = /^[a-z]{4,15}$/;
-    if (!usernameRegex.test(data.username)) {
+    if (!usernameRegex.test(username)) {
         throw createError({ statusCode: 400, statusMessage: 'Username harus huruf kecil semua, minimal 4 karakter, dan maksimal 15 karakter' });
     }
 
     // Validasi format email
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(data.email)) {
+    if (!emailRegex.test(email)) {
         throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
+    }
+
+    if (password.length < 6) {
+        throw createError({ statusCode: 400, statusMessage: 'Password minimal 6 karakter' });
     }
 
     // Mencari user yang sudah ada berdasarkan email atau username (untuk memeriksa apakah sudah ada user yang terdaftar menggunakan data dari request)
     const existingUsers = await prisma.user.findMany({
         where: {
-            OR: [{ email: data.email }, { username: data.username }]
+            OR: [{ email: email }, { username: username }]
         }
     });
 
@@ -36,29 +44,48 @@ export default defineEventHandler(async (event) => {
 
         if (verifiedUser) {
             // Memeriksa apakah user sudah terdaftar
-            if (verifiedUser.email === data.email && verifiedUser.username === data.username) {
+            if (verifiedUser.email === email && verifiedUser.username === username) {
                 throw createError({ statusCode: 409, statusMessage: 'Username dan Email sudah terdaftar' });
-            } else if (verifiedUser.email === data.email) {
+            } else if (verifiedUser.email === email) {
                 throw createError({ statusCode: 409, statusMessage: 'Email sudah terdaftar' });
             } else {
                 throw createError({ statusCode: 409, statusMessage: 'Username sudah terdaftar' });
             }
         }
 
-        throw createError({ statusCode: 409, statusMessage: 'Akun dengan email atau username ini sudah terdaftar tapi belum diverifikasi. Silakan minta ulang OTP atau login.' });
+        // Jika user belum terverifikasi
+        const unverifiedUser = existingUsers.find((u: any) => !u.emailVerifiedAt);
+        if (unverifiedUser && unverifiedUser.email === email) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await prisma.user.update({
+                where: { id: unverifiedUser.id },
+                data: {
+                    username: username,
+                    photo: photo || undefined,
+                    password: hashedPassword,
+                    bio: bio || '',
+                }
+            });
+            return {
+                status: 'berhasil daftar',
+                message: 'User updated, OTP required'
+            };
+        }
+
+        throw createError({ statusCode: 409, statusMessage: 'Akun dengan username ini sudah terdaftar. Silakan gunakan username lain atau verifikasi email Anda.' });
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10); // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash password
 
     // Membuat user baru
     try {
         await prisma.user.create({
             data: {
-                username: data.username,
+                username: username,
                 photo: photo || undefined,
-                email: data.email,
+                email: email,
                 password: hashedPassword,
-                bio: data.bio
+                bio: bio || ''
             }
         });
 

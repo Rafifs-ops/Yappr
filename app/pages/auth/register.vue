@@ -84,6 +84,9 @@ async function handleRegister() {
     }
 }
 
+import { useAuth } from '~/stores/Auth';
+const auth = useAuth();
+
 async function handleVerifyOTP() {
     try {
         isLoading.value = true;
@@ -91,10 +94,26 @@ async function handleVerifyOTP() {
             method: 'POST',
             body: { email: dataRegister.value.email, otp: otp.value, type: 'register' }
         })
+        await auth.fetchSession();
         toast.success("Akun berhasil terverifikasi! Selamat bergabung di Yappr.", "Pendaftaran Sukses");
         router.push('/');
     } catch (err) {
         toast.error(err.statusMessage || "OTP tidak valid", "Verifikasi Gagal");
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+async function handleResendOTP() {
+    try {
+        isLoading.value = true;
+        await $csrfFetch('/api/send-otp', {
+            method: 'POST',
+            body: { email: dataRegister.value.email, type: 'register' }
+        });
+        toast.info(`Kode OTP baru telah dikirim ke ${dataRegister.value.email}`, 'OTP Terkirim');
+    } catch (err) {
+        toast.error(err.statusMessage || "Gagal mengirim ulang OTP", "Pengiriman Gagal");
     } finally {
         isLoading.value = false;
     }
@@ -201,6 +220,17 @@ async function handleVerifyOTP() {
                     class="mt-2 w-full btn-neon-purple font-orbitron font-bold py-3 rounded-xl transition duration-300 shadow-lg tracking-widest text-xs">
                     {{ isLoading ? 'VALIDATING...' : 'VERIFY' }}
                 </button>
+
+                <div class="flex justify-between items-center mt-2 font-mono text-[11px]">
+                    <button type="button" @click="handleResendOTP" :disabled="isLoading"
+                        class="text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-2">
+                        Kirim Ulang OTP
+                    </button>
+                    <button type="button" @click="step = 1" :disabled="isLoading"
+                        class="text-purple-600 hover:text-purple-500 transition-colors">
+                        Kembali
+                    </button>
+                </div>
             </form>
         </div>
     </div>

@@ -40,5 +40,5 @@ export default defineEventHandler(async (event) => {
             username: m.sender.username,
             photo: m.sender.photo
         } : null
-    }));
+    })); // output: [{ _id, chatId, content, createdAt, senderId }] 
 });

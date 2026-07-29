@@ -1,8 +1,10 @@
 # Dokumentasi Website Yappr (X/Twitter Clone)
 
-Untuk aplikasi android/ios (coming soon) akan menggunakan library `capacitor.js` untuk mengonversi kode frontend Nuxt Js menjadi aplikasi native android/ios
+Untuk aplikasi android/ios (coming soon) akan menggunakan library `capacitor.js` untuk mengonversi kode frontend Nuxt Js menjadi aplikasi native android/ios.
 
-Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapakan rate limiting untuk mencegah DDoS dengan bantuan library `nuxt-security`
+Untuk basis data, aplikasi ini menggunakan **SQLite** yang dikelola menggunakan **Prisma ORM** untuk penanganan kueri relasional yang cepat, efisien, dan terstruktur.
+
+Untuk keamanan, website ini sudah bisa mencegah serangan CSRF dan menerapkan rate limiting untuk mencegah DDoS dengan bantuan library `nuxt-security`.
 
 ---
 
@@ -44,23 +46,23 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 ## Alur Fitur Private Account
 
 1. Di skema model User, ada field isPrivate dengan type data Boolean untuk menandai status akun
-2. Di skema model Follow, ada field status ( Enum: accepted or pending ) karena proses follow akun privat tidak langsung berhasil, melainkan harus "menunggu persetujuan".
-3. Di endpoint `server/api/follow/add.post.ts` (menambah data followers & following). Sebelum membuat follow, cek dulu apakah user yang difollow (following) memiliki isPrivate: true. Jika akun privat, maka buat data(doc) Follow dengan status: 'pending'. Jangan langsung jalankan `$inc: { followers: 1 } dan $inc: { following: 1 }`. Server langsung buat data(doc) notifikasi pada model Notification dengan tipe: 'follow_request', pesannya: 'meminta untuk mengikuti Anda'. Intinya untuk membuat notifikasi kepada user yang difollow untuk meminta izin untuk follow. Jika akun publik, maka status accepted dan langsung increment angka followers.
+2. Di skema model Follow, ada field status ( String / Enum: 'accepted' or 'pending' ) karena proses follow akun privat tidak langsung berhasil, melainkan harus "menunggu persetujuan".
+3. Di endpoint `server/api/follow/add.post.ts` (menambah data followers & following). Sebelum membuat follow, cek dulu apakah user yang difollow (following) memiliki isPrivate: true. Jika akun privat, maka buat data Follow dengan status: 'pending'. Jangan langsung jalankan operasi increment (`followers: { increment: 1 }` dan `following: { increment: 1 }`). Server langsung buat data notifikasi pada model Notification dengan tipe: 'follow_request', pesannya: 'meminta untuk mengikuti Anda'. Intinya untuk membuat notifikasi kepada user yang difollow untuk meminta izin untuk follow. Jika akun publik, maka status accepted dan langsung increment angka followers.
 
 > Catatan: Ada 2 endpoint API di folder follow yaitu `accept.post.ts` dan `reject.post.ts` untuk mengubah status 'pending' menjadi 'accepted' (sekaligus menambah jumlah followers) atau menghapusnya.
 
-4. Untuk data akun yang diprivat, pada endponit `server/api/user/[id].get.ts` (mengambil data profil orang lain), server mengecek relasi follow (mencari tahu sudah di follow atau belum) dan mencari yang statusnya accepted. Cek apakah field isPrivate pada data(doc) user itu true? Jika privat dan currentUser.id (diambil dari session auth) !== userDb._id (bukan dirinya sendiri) DAN isFollowed bernilai false (belum di-follow / masih pending), maka, kosongkan array userTweets (jangan kirim tweet ke klien). Tweet user (orang lain) tidak akan muncul. Pada endpoint `server/api/twits/user/[id].get.ts` (mengambil data twit orang lain), maka server akan mengambil data(doc) User terlebih dahulu berdasarkan id untuk mengecek isPrivate. Pengecekan akan sama, jika akun privat dan user yang memanggil API belum follow (status pending), kembalikan array kosong []. Begitu juga pada endpoint-endpoint yang bersifat publik lainnya yang mengambil data twit
+4. Untuk data akun yang diprivat, pada endpoint `server/api/user/[id].get.ts` (mengambil data profil orang lain), server mengecek relasi follow (mencari tahu sudah di-follow atau belum) dan mencari yang statusnya accepted. Cek apakah field isPrivate pada data User itu true? Jika privat dan currentUser.id (diambil dari session auth) !== userDb.id (bukan dirinya sendiri) DAN isFollowed bernilai false (belum di-follow / masih pending), maka, kosongkan array userTweets (jangan kirim tweet ke klien). Tweet user (orang lain) tidak akan muncul. Pada endpoint `server/api/twits/user/[id].get.ts` (mengambil data twit orang lain), maka server akan mengambil data User terlebih dahulu berdasarkan id untuk mengecek isPrivate. Pengecekan akan sama, jika akun privat dan user yang memanggil API belum follow (status pending), kembalikan array kosong []. Begitu juga pada endpoint-endpoint yang bersifat publik lainnya yang mengambil data twit
 
 ---
 
 ## Alur Authentikasi
 
-1. User Login, server akan memeriksa apakah email nya ada?, apakah emailnya sesuai format?. Jika ada dan sesuai, maka server kan mencari data(Doc) User ke database.
-2. Jika User ada dan email sudah terverifikasi, maka password dari input user akan dicompare dengan password di database menggunakan bycrpt. Jika true, maka server akan membuat access token dan refresh token dengan payload userId dengan jsonwebtoken
+1. User Login, server akan memeriksa apakah email nya ada?, apakah emailnya sesuai format?. Jika ada dan sesuai, maka server akan mencari data User ke database.
+2. Jika User ada dan email sudah terverifikasi, maka password dari input user akan dicompare dengan password di database menggunakan bcrypt. Jika true, maka server akan membuat access token dan refresh token dengan payload userId dengan jsonwebtoken
 3. Setelah itu, access dan refresh token akan disimpan di cookie web client. Login berhasil dan Data user nanti akan disimpan di session bagian server
 4. Session server mendapatkan data User dengan cara mengambil access token yang ada di cookie, lalu token tersebut akan digunakan untuk diverify sekaligus di decode untuk mendapatkan userId
 5. Refresh token berfungsi jika access token user sudah kadaluwarsa, maka server akan menggunakan refresh token untuk membuat access token yang baru. Sehingga user tidak perlu login ulang jika access token mereka sudah kadaluwarsa
-6. Lalu, Session akan mencari data(doc) user ke database dengan userId yang sudah didapat dari decode token. Data(doc) User akan dikembalikan sebagai response backend untuk dikirim ke frontend (client)
+6. Lalu, Session akan mencari data user ke database dengan userId yang sudah didapat dari decode token. Data User akan dikembalikan sebagai response backend untuk dikirim ke frontend (client)
 
 ---
 
@@ -69,7 +71,7 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 1. User mengisi data-data sekaligus photo profil
 2. Saat request ke endpoint server/api/auth/register.post.ts (untuk daftar), maka akan melewati sebuah middleware untuk menyimpan foto profil ke storage pihak ketiga (cloudinary) dan mendapatkan nama file photo profilnya yang akan dimasukan ke dalam database User
 3. Saat sampai di endpoint API registrasi, server akan memeriksa apakah data nya lengkap, username & email sesuai format yang telah ditentukan, dan apakah ada user lain yang sudah mendaftar dengan data username dan email yang sama.
-4. Jika aman, maka data password yang telah diinput akan di hash dengan bcrypt dengan salt 10. Kemudian data-data user akan diinput ke database User dengan email yang belum terverifikasi dan membuat data(doc) kode OTP ke Model Otp (database) yang memiliki kadaluwarsa 5 menit
+4. Jika aman, maka data password yang telah diinput akan di hash dengan bcrypt dengan salt 10. Kemudian data-data user akan diinput ke database User dengan email yang belum terverifikasi dan membuat data kode OTP ke Model Otp (database) yang memiliki kadaluwarsa 5 menit
 
 > Catatan: Meskipun data-data yang diinput user langsung masuk ke database, email nya belum terverikasi. Maka user belum bisa langsung dibuatkan session auth untuk login/masuk ke halaman utama
 
@@ -80,16 +82,16 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 
 ## Alur Logout
 
-1. Jika user klik tombol logout di profile, maka otomatis akan request ke endpoint `server/api/logout.post.ts`. Di endpoint tersebut, server akan menghapus token yand ada di cookie web client, sehingga session tidak lagi bisa mendapatkan data user di database karena tokennya sudah dihapus.
+1. Jika user klik tombol logout di profile, maka otomatis akan request ke endpoint `server/api/logout.post.ts`. Di endpoint tersebut, server akan menghapus token yang ada di cookie web client, sehingga session tidak lagi bisa mendapatkan data user di database karena tokennya sudah dihapus.
 2. User otomatis akan diarahkan ke halaman login
 
 ---
 
 ## Alur Membuat Twit
 
-1. User membuat twit denga mengisi data-data yang diperlukan (teks, gambar/video) di frontend.
-2. Ketika User mengklik tombol create, makan akan request ke endpoint `server/api/twits/index.post.ts` (membuat twit). Di endpoint tersebut, server akan memeriksa apakah ada foto/video?. Jika ada, maka akan langsung dimasukan ke storage pihak ketiga (cloudinary) dan mendapatkan nama foto/video nya akan akan diinput ke dalam database data(doc) Twit
-3. Jika ada twitId di body request, maka twit yang user buat adalah subTwit (twit untuk membalas twit parent/twit orang lain). Maka data(doc) twit orang lain yang dibalas akan dinaikan (increment) angka commentCount nya
+1. User membuat twit dengan mengisi data-data yang diperlukan (teks, gambar/video) di frontend.
+2. Ketika User mengklik tombol create, maka akan request ke endpoint `server/api/twits/index.post.ts` (membuat twit). Di endpoint tersebut, server akan memeriksa apakah ada foto/video?. Jika ada, maka akan langsung dimasukan ke storage pihak ketiga (cloudinary) dan mendapatkan nama foto/video nya yang akan diinput ke dalam database pada model Twit
+3. Jika ada twitId di body request, maka twit yang user buat adalah subTwit (twit untuk membalas twit parent/twit orang lain). Maka data twit orang lain yang dibalas akan dinaikkan (increment) angka commentCount nya
 4. Jika Berhasil, maka user akan langsung diarahkan ke halaman profil user tersebut untuk melihat twit yang baru dibuat
 
 ---
@@ -99,23 +101,22 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 1. Begitu user tiba di halaman utama, otomatis akan request ke endpoint `server/api/twits/index.get.ts` untuk mendapatkan twit-twit harian.
 2. Twit-twit itu adalah twit yang dimiliki oleh orang yang difollow oleh user, dilike, dan direpost oleh orang yang difollow oleh user(client)
 3. Untuk langkah-langkah di dalam servernya, server akan mencari orang-orang yang di follow oleh user(client) melalui model Follow dan membuat array baru (map) untuk mengambil id-id user nya saja
-4. Lalu id-id tersebut akan digunakan untuk mencari twit, twit yang diliked/direposted oleh user-user yang difollow oleh client (dari model Like/Repost, populate twit)
+4. Lalu id-id tersebut akan digunakan untuk mencari twit, twit yang diliked/direposted oleh user-user yang difollow oleh client (dari model Like/Repost, include relasi twit)
 5. Setelah itu, twit-twit hasil kueri dari database tersebut akan digabung menjadi satu
 
-> Catatan: Sebelum digabung menjadi satu, twit-twit tersebut akan difilter lagi untuk menghilangkan twit yang sudah tidak ada (null). Contoh kasusnhya seperti twit yang dilike/direpost oleh teman user sudah dihapus oleh pemilik nya. Maka saat mengkueri ke database (langkah 4), maka akan menghasilkan null karena twitnya sudah tidak ada. Jadi, sebelum digabung, twit-twit tersebut akan difilter untuk membuang twit yang null
+> Catatan: Sebelum digabung menjadi satu, twit-twit tersebut akan difilter lagi untuk menghilangkan twit yang sudah tidak ada (null). Contoh kasusnya seperti twit yang dilike/direpost oleh teman user sudah dihapus oleh pemiliknya. Maka saat mengkueri ke database (langkah 4), maka akan menghasilkan null karena twitnya sudah tidak ada. Jadi, sebelum digabung, twit-twit tersebut akan difilter untuk membuang twit yang null
 
-6. Server akan juga menghapus duplikasi twit, mengurut urutan twit berdasarkan yang terbaru, dan menambah status isLiked & isReposted (apakah client sudah like/repost twit tersebut) yang dimana status itu akan dimanfaatkan di bagian frontend untuk fitur like dan repost
+6. Server akan juga menghapus duplikasi twit, mengurut urutan twit berdasarkan yang terbaru, dan menambah status isLiked & isReposted (apakah client sudah me-like/repost twit tersebut) yang dimana status itu akan dimanfaatkan di bagian frontend untuk fitur me-like dan repost
 
 ---
 
 ## Alur Like dan Repost
 
-1. Ketika user(client) klik tombol like/repost pada salah satu twit, maka otomatis akan request ke endpoint `server/api/like/add.post.ts` atau `server/api/repost/add.post.ts`.
-2. Didalam endpoint server tersebut, server akan menambah data(doc) kedatabase untuk mencatat siapa yang like/repost dan twit apa yang dilike/direpost. Server juga akan menambah angka repostCount/likeCount di data(doc) Twit
-
-> Catatan: jika user sudah like/repost twit tersebut, maka endpoint api di frontend akan akan berubah menjadi `server/api/like/remove.post.ts` atau `server/api/repost/remove.post.ts` untuk menghapus data(doc) Like/Repost dan mengurangi angka repostCount/likeCount di data(doc) Twit
-
+1. Ketika user(client) klik tombol me-like/repost pada salah satu twit, maka otomatis akan request ke endpoint `server/api/like/add.post.ts` atau `server/api/repost/add.post.ts`.
+2. Didalam endpoint server tersebut, server akan menambah data ke database untuk mencatat siapa yang me-like/repost dan twit apa yang di-like/repost. Server juga akan menambah angka repostCount/likeCount di data Twit
 3. Di frontend, user akan langsung menerima effect setelah request yaitu angka like/repost langsung naik/turun dan warna icon berubah sesuai status yang dimanfaatkan dari Alur Mendapatkan Data-data Twit Untuk Halaman Utama langkah terakhir
+
+> Catatan: Jika user sudah me-like/repost twit tersebut, maka endpoint API di frontend akan berubah menjadi `server/api/like/remove.post.ts` atau `server/api/repost/remove.post.ts` untuk menghapus data Like/Repost dan mengurangi angka repostCount/likeCount di data Twit
 
 ---
 
@@ -130,8 +131,8 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 
 ## Alur Membuat Room Chat
 
-1. Client menentukan siapa lawan bicara nya dan click tombol start chat
-2. Setelah itu, client akan merequest ke endpoint `server/api/chat/index.post.ts` untuk membuat data(doc) pada model Chat untuk membuat room chat dan model MemberChat untuk menentukan anggota room chat yang berelasi ke model Chat
+1. Client menentukan siapa lawan bicaranya dan click tombol start chat
+2. Setelah itu, client akan merequest ke endpoint `server/api/chat/index.post.ts` untuk membuat data pada model Chat untuk membuat room chat dan model MemberChat untuk menentukan anggota room chat yang berelasi ke model Chat
 3. Client akan otomatis diarahkan ke halaman `chats/[id]`
 
 ---
@@ -139,7 +140,7 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 ## Alur Chat
 
 1. Ketika user membuka halaman chats/[id], otomatis request ke endpoint `server/api/chat/[id]/message.get.ts` untuk mendapatkan riwayat chat dan membuka/memulai server websocket yang siap menerima data message
-2. Di dalam websocket server ada fungsi untuk membuat data(doc) pada model Message yang siap menampung message dari user. Begitu client mengirim pesan, maka akan langsung terhubung dengan fungsi tersebut untuk input message ke database dan websocket akan mengirim balik messagenya ke client
+2. Di dalam websocket server ada fungsi untuk membuat data pada model Message yang siap menampung message dari user. Begitu client mengirim pesan, maka akan langsung terhubung dengan fungsi tersebut untuk input message ke database dan websocket akan mengirim balik messagenya ke client
 
 > Catatan: Route websocket nya adalah `https://[host domain]/ws-chat`. File terletak di `server/routes/ws-chat.ts`
 
@@ -151,10 +152,10 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 ## Alur Follow dan Unfollow
 
 1. Ketika user (client) mengklik tombol follow pada profil orang lain, otomatis frontend akan melakukan request ke endpoint `server/api/follow/add.post.ts`.
-2. Di dalam endpoint tersebut, server akan mengecek status privasi akun target (yang di-follow). Jika target adalah akun publik (isPrivate: false), server akan membuat data(doc) Follow dengan status 'accepted'. Bersamaan dengan itu, server akan menjalankan fungsi `$inc` untuk menaikkan (increment) angka `followers` pada akun target dan angka `following` pada akun user yang me-request.
+2. Di dalam endpoint tersebut, server akan mengecek status privasi akun target (yang di-follow). Jika target adalah akun publik (isPrivate: false), server akan membuat data Follow dengan status 'accepted'. Bersamaan dengan itu, server akan menjalankan fungsi increment Prisma (`increment: 1`) untuk menaikkan angka `followers` pada akun target dan angka `following` pada akun user yang me-request.
 3. (Catatan: Jika akun target diprivat, alurnya akan mengikuti aturan "Alur Fitur Private Account" di mana status menjadi 'pending' dan membutuhkan persetujuan lewat endpoint `server/api/follow/accept.post.ts` atau `server/api/follow/reject.post.ts`).
 4. Untuk proses Unfollow, ketika user mengklik tombol unfollow, frontend akan merequest ke endpoint `server/api/follow/remove.post.ts`.
-5. Pada endpoint remove tersebut, server akan mencari data(doc) Follow yang merelasikan kedua user di database, lalu menghapusnya. Setelah dihapus, server akan menurunkan (decrement) angka `followers` pada akun target dan angka `following` pada akun user klien.
+5. Pada endpoint remove me-request, server akan mencari data Follow yang merelasikan kedua user di database, lalu menghapusnya. Setelah dihapus, server akan menurunkan (decrement) angka `followers` pada akun target dan angka `following` pada akun user klien.
 6. Di frontend, user akan langsung menerima efeknya di mana teks dan warna tombol akan berubah kembali menjadi "Follow" atau "Unfollow" sesuai dengan aksi yang baru saja diselesaikan.
 
 ---
@@ -165,12 +166,22 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 2. User mengubah data-data yang diinginkan, seperti nama, bio, atau mengganti foto profil.
 3. Ketika user mengklik tombol simpan (save), frontend akan melakukan request ke endpoint `server/api/user/update.put.ts`.
 4. Di endpoint tersebut, server pertama-tama akan memvalidasi data yang dikirim. Jika user juga mengunggah foto profil baru, file foto tersebut akan di-upload terlebih dahulu ke storage pihak ketiga (misalnya Cloudinary) menggunakan middleware atau fungsi utilitas terkait, lalu server akan mendapatkan nama/URL file yang baru.
-5. Setelah itu, server akan memperbarui data(doc) User di database berdasarkan userId milik klien. Field yang diperbarui meliputi teks biodata dan nama file foto profil yang baru (jika user mengganti fotonya).
+5. Setelah itu, server akan memperbarui data User di database berdasarkan userId milik klien. Field yang diperbarui meliputi teks biodata dan nama file foto profil yang baru (jika user mengganti fotonya).
 6. Jika proses update ke database berhasil, server akan mengembalikan response sukses. Frontend kemudian akan mengarahkan (redirect) user kembali ke halaman profil utamanya, baik itu `app/pages/profile/index.vue` atau `app/pages/profile/[id].vue`, dan data profil yang tampil sudah merupakan data yang paling baru.
 
 ---
 
-## ERD
+## Skema Basis Data & ERD (SQLite via Prisma)
+
+Aplikasi ini menggunakan SQLite dengan **Prisma ORM** yang mendefinisikan model-model relasional berikut:
+- **User**: Menyimpan data akun pengguna, status privasi (`isPrivate`), dan relasi.
+- **Twit**: Menyimpan postingan utama maupun balasan (SubTwit) beserta metrik suka, balasan, dan repost.
+- **TwitHashtag & TwitMention**: Menyimpan pemetaan hashtag dan penyebutan pengguna dalam cuitan.
+- **Like & Repost**: Mencatat relasi unik antara pengguna dan cuitan yang disukai/direpost.
+- **Follow**: Mencatat hubungan pengikut dan yang diikuti beserta status persetujuan (`accepted` / `pending`).
+- **Notification**: Menyimpan pemberitahuan aktivitas pengguna.
+- **Otp**: Menyimpan kode verifikasi pendaftaran & reset password.
+- **Chat, MemberChat & Message**: Mengelola ruang percakapan dan riwayat pesan obrolan.
 
 ![gambar-erd](https://res.cloudinary.com/dzj9avwsg/image/upload/v1781370962/Cuplikan_layar_2026-06-14_001134_hcl8hz.png)
 
@@ -217,7 +228,7 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 | `/api/twits/user/:userId/liked` | `GET` | Mendapatkan daftar cuitan yang disukai oleh pengguna tertentu. |
 | `/api/twits/user/:userId/reposted` | `GET` | Mendapatkan daftar cuitan yang di-*repost* oleh pengguna tertentu. |
 | `/api/twits/hashtag/:hashtag` | `GET` | Mendapatkan daftar cuitan berdasarkan hashtag tertentu. |
-| `/api/hashtags/trending` | `GET` | Mendapatkan daftar hashtag yang sedang tren. |
+| `/api/hashtags/trending` | `GET` | Mendapatkan daftar hashtag me-trending. |
 
 ### ❤️ Interaksi (Like, Repost, Notifikasi)
 

@@ -2,14 +2,16 @@ import { prisma } from "../../utils/prisma";
 
 export default defineEventHandler(async (event) => {
     try {
-        const { follower, following } = await readBody(event);
+        const { follower, following } = await readBody(event); // Mengambil data follower dan following dari body request
 
+        // Mencari user yang akan diikuti
         const targetUser = await prisma.user.findUnique({ where: { id: following } });
         if (!targetUser) throw createError({ statusCode: 404, statusMessage: 'User not found' });
 
-        const isPrivate = targetUser.isPrivate;
-        const status = isPrivate ? 'pending' : 'accepted';
+        const isPrivate = targetUser.isPrivate; // Mengambil status private user yang akan diikuti
+        const status = isPrivate ? 'pending' : 'accepted'; // Mengambil status follow (pending jika private, accepted jika tidak)
 
+        // Membuat follow baru
         await prisma.follow.create({
             data: {
                 followerId: follower,
@@ -18,8 +20,9 @@ export default defineEventHandler(async (event) => {
             }
         });
 
-        if (follower !== following) {
-            if (isPrivate) {
+        // Membuat notifikasi
+        if (follower !== following) { // Jika follower dan following bukan orang yang sama
+            if (isPrivate) { // Jika user yang akan diikuti adalah private
                 await prisma.notification.create({
                     data: {
                         userId: following,
@@ -28,7 +31,7 @@ export default defineEventHandler(async (event) => {
                         message: 'meminta untuk mengikuti Anda'
                     }
                 });
-            } else {
+            } else { // Jika user yang akan diikuti adalah public
                 await prisma.notification.create({
                     data: {
                         userId: following,
@@ -38,10 +41,13 @@ export default defineEventHandler(async (event) => {
                     }
                 });
 
+                // Update jumlah following pada user yang login
                 await prisma.user.update({
                     where: { id: follower },
                     data: { following: { increment: 1 } }
                 });
+
+                // Update jumlah followers pada user yang diikuti
                 await prisma.user.update({
                     where: { id: following },
                     data: { followers: { increment: 1 } }
@@ -51,7 +57,7 @@ export default defineEventHandler(async (event) => {
 
         return {
             statusCode: 201,
-            statusMessage: "User followed successfully",
+            statusMessage: status == 'pending' ? "Follow request sent" : "User followed successfully",
         };
     } catch (error: any) {
         throw createError({

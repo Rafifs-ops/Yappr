@@ -1,5 +1,6 @@
 import { prisma } from '../../utils/prisma';
 
+// Mengambil semua daftar user
 export default defineEventHandler(async (event) => {
     try {
         const userDb = await prisma.user.findMany({
@@ -17,12 +18,11 @@ export default defineEventHandler(async (event) => {
                 updatedAt: true
             }
         });
-        return userDb.map((u: any) => ({ ...u, _id: u.id }));
-    } catch (error) {
-        console.error('Error fetching profile data:', error);
+        return userDb.map((u: any) => ({ ...u, _id: u.id })); // output: [{ _id: string, username: string, photo: string, email: string, bio: string, emailVerifiedAt: string, followers: number, following: number, isPrivate: boolean, createdAt: string, updatedAt: string }, ...]
+    } catch (error: any) {
         throw createError({
             statusCode: 500,
-            statusMessage: 'Internal Server Error'
+            statusMessage: error.message
         });
     }
 });

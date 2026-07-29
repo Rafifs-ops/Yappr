@@ -1,12 +1,14 @@
 import { prisma } from '../../utils/prisma';
 
 export default defineEventHandler(async (event) => {
-    const query = getQuery(event);
-    const search = query.q as string;
+    const query = getQuery(event); // Mengambil data query dari parameter router
+    const search = query.q as string; // Mengambil data search dari parameter router
 
+    // Jika tidak ada search
     if (!search) return [];
 
     try {
+        // Mencari user
         const users = await prisma.user.findMany({
             where: {
                 username: {
@@ -21,7 +23,7 @@ export default defineEventHandler(async (event) => {
             }
         });
 
-        return users.map((u: any) => ({ ...u, _id: u.id, name: u.username }));
+        return users.map((u: any) => ({ ...u, _id: u.id, name: u.username })); // output: [{ _id: string, username: string, photo: string }, ...]
     } catch (error) {
         return [];
     }

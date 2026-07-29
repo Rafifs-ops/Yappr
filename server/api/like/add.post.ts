@@ -3,13 +3,15 @@ import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
     try {
-        const body = await readBody(event);
-        const user = await session(event);
+        const body = await readBody(event); // Mengambil data body request
+        const user = await session(event); // Mengambil user dari session
 
+        // Memeriksa apakah body twit dan user ada
         if (!body.twitId || !user) {
             throw createError({ statusCode: 400, statusMessage: 'twit dan user tidak ada' });
         }
 
+        // Membuat like baru
         const newLike = await prisma.like.create({
             data: {
                 twitId: body.twitId,
@@ -17,8 +19,11 @@ export default defineEventHandler(async (event) => {
             }
         });
 
+        // Mencari twit yang di like
         const twit = await prisma.twit.findUnique({ where: { id: body.twitId } });
+        // Jika twit ditemukan dan user yang login bukan pemilik twit
         if (twit && twit.userId !== user.id) {
+            // Membuat notifikasi
             await prisma.notification.create({
                 data: {
                     userId: twit.userId,
@@ -31,11 +36,13 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // Update jumlah like pada twit
         const updateTwit = await prisma.twit.update({
             where: { id: body.twitId },
             data: { likesCount: { increment: 1 } }
         });
 
+        // Mengembalikan data like baru dan twit yang di update
         return {
             newLike,
             updateTwit

@@ -3,11 +3,11 @@ import { session } from "../../../../utils/session";
 
 export default defineEventHandler(async (event) => {
     try {
-        const id = getRouterParam(event, 'userId');
+        const id = getRouterParam(event, 'userId'); // Mengambil ID user dari router params
         if (!id) throw createError({ statusCode: 400, statusMessage: 'User ID required' });
 
         const searchReposted = await prisma.repost.findMany({
-            where: { userId: id },
+            where: { userId: id }, // Mencari twit yang di repost oleh user
             orderBy: { createdAt: 'desc' },
             take: 10,
             include: {

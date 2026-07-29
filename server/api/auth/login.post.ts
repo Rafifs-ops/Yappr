@@ -4,20 +4,21 @@ import jwt from 'jsonwebtoken';
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event); // Mengambil data body request
+    const email = data.email?.trim().toLowerCase();
 
     // Validasi data request apakah password dan email ada ?
-    if (!data.password && !data.email) {
-        throw createError({ statusCode: 400, statusMessage: 'Email atau Password belum ada' });
+    if (!data.password || !email) {
+        throw createError({ statusCode: 400, statusMessage: 'Email dan Password wajib diisi' });
     }
 
     // Validasi format email
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(data.email)) {
+    if (!emailRegex.test(email)) {
         throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
     }
 
     // Mencari user berdasarkan email
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
+    const user = await prisma.user.findUnique({ where: { email: email } });
 
     // Jika user tidak ditemukan
     if (!user) {
@@ -44,7 +45,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Mengambil data user id untuk dijadikan payload
-    const payload = user;
+    const payload = { id: user.id, username: user.username, email: user.email };
 
     // Jika password cocok
     if (isMatch) {

@@ -46,6 +46,21 @@ async function handleResetPassword() {
         isLoading.value = false;
     }
 }
+
+async function handleResendOTP() {
+    try {
+        isLoading.value = true;
+        await $csrfFetch('/api/send-otp', {
+            method: 'POST',
+            body: { email: email.value, type: 'reset_password' }
+        });
+        toast.info(`Kode OTP baru telah dikirim ke ${email.value}`, 'OTP Terkirim');
+    } catch (err) {
+        toast.error(err.statusMessage || "Gagal mengirim ulang OTP", "Pengiriman Gagal");
+    } finally {
+        isLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -121,6 +136,17 @@ async function handleResetPassword() {
                     class="mt-2 w-full btn-neon-purple font-orbitron font-bold py-3 rounded-xl transition duration-300 shadow-lg tracking-widest text-xs">
                     {{ isLoading ? 'LOADING...' : 'UBAH PASSWORD' }}
                 </button>
+
+                <div class="flex justify-between items-center mt-2 font-mono text-[11px]">
+                    <button type="button" @click="handleResendOTP" :disabled="isLoading"
+                        class="text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-2">
+                        Kirim Ulang OTP
+                    </button>
+                    <button type="button" @click="step = 1" :disabled="isLoading"
+                        class="text-purple-600 hover:text-purple-500 transition-colors">
+                        Kembali
+                    </button>
+                </div>
             </form>
         </div>
     </div>

@@ -15,20 +15,23 @@ const uploadStream = (buffer: Buffer, options: any) => {
 
 export default defineEventHandler(async (event) => {
     try {
-        const config = useRuntimeConfig();
+        const config = useRuntimeConfig(); // Mengambil data config dari file .env
+
+        // Mengkonfigurasi Cloudinary
         cloudinary.config({
             cloud_name: config.cloudinaryCloudName,
             api_key: config.cloudinaryApiKey,
             api_secret: config.cloudinaryApiSecret,
             secure: true
         });
-        const user = await session(event);
+        const user = await session(event); // Mengambil data user dari session
 
+        // Jika user tidak login, throw error
         if (!user) {
             throw createError({ statusCode: 401, statusMessage: 'Akses ditolak. User tidak valid.' });
         }
 
-        const multipartData = await readMultipartFormData(event);
+        const multipartData = await readMultipartFormData(event); // output: data yang dikirim dari client
         if (!multipartData) {
             throw createError({ statusCode: 400, statusMessage: 'Data form tidak valid atau kosong' });
         }
@@ -39,6 +42,7 @@ export default defineEventHandler(async (event) => {
         let imageBuffer: Buffer | undefined;
         let videoBuffer: Buffer | undefined;
 
+        // Mengambil data dari form
         for (const part of multipartData) {
             if (part.name === 'text' && part.data) {
                 text = part.data.toString('utf-8');
@@ -61,13 +65,16 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Menghapus tag html dan spasi dari twit (hanya untuk pengecekan jumlah karakter)
         const plainText = (text || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const MAX_TWIT_LENGTH = 280;
 
+        // Jika twit kosong, throw error
         if (!plainText) {
             throw createError({ statusCode: 400, statusMessage: 'Twit tidak boleh kosong' });
         }
 
+        // Jika twit terlalu panjang, throw error
         if (plainText.length > MAX_TWIT_LENGTH) {
             throw createError({
                 statusCode: 400,
@@ -75,9 +82,10 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        const MAX_MENTIONS = 5;
-        const MAX_MENTION_LENGTH = 20;
+        const MAX_MENTIONS = 5; // Maksimal user yang bisa mention
+        const MAX_MENTION_LENGTH = 20; // Maksimal panjang username yang bisa mention
 
+        // Mengambil username yang di mention
         const mentionedUsernames = text.match(new RegExp(`@([a-zA-Z0-9_]{1,${MAX_MENTION_LENGTH}})`, 'g'))
             ?.map(m => m.substring(1))
             .slice(0, MAX_MENTIONS) || [];
@@ -85,6 +93,7 @@ export default defineEventHandler(async (event) => {
         let mentionIds: string[] = [];
         let taggedUsers: any[] = [];
 
+        // Jika mention lebih dari maksimal, throw error
         if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).length > MAX_MENTIONS) {
             throw createError({
                 statusCode: 400,
@@ -92,6 +101,7 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // Jika username mention lebih dari maksimal, throw error
         if ((text.match(/@([a-zA-Z0-9_]+)/g) || []).some(m => m.length - 1 > MAX_MENTION_LENGTH)) {
             throw createError({
                 statusCode: 400,
@@ -99,6 +109,7 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // Jika ada mention, ambil data user yang di mention dari database
         if (mentionedUsernames.length > 0) {
             taggedUsers = await prisma.user.findMany({
                 where: { username: { in: mentionedUsernames } }
@@ -109,6 +120,7 @@ export default defineEventHandler(async (event) => {
         let imageUrl = '';
         let videoUrl = '';
 
+        // Upload gambar ke Cloudinary
         if (imageBuffer) {
             try {
                 const uploadResult: any = await uploadStream(imageBuffer, {
@@ -121,6 +133,7 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Upload video ke Cloudinary
         if (videoBuffer) {
             try {
                 const uploadResult: any = await uploadStream(videoBuffer, {
@@ -135,6 +148,7 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Membuat twit di database (Menggunakan $transaction agar aman)
         const result = await prisma.$transaction(async (tx) => {
             const newTwit = await tx.twit.create({
                 data: {
@@ -153,9 +167,10 @@ export default defineEventHandler(async (event) => {
                 }
             });
 
+            // Membuat notifikasi untuk user yang di mention (jika ada)
             if (mentionIds.length > 0) {
                 for (const taggedUser of taggedUsers) {
-                    if (taggedUser.id !== user.id) {
+                    if (taggedUser.id !== user.id) { // Jika yang di mention bukan client sendiri
                         await tx.notification.create({
                             data: {
                                 userId: taggedUser.id,
@@ -170,6 +185,7 @@ export default defineEventHandler(async (event) => {
                 }
             }
 
+            // Jika twit merupakan komentar (sub twit) di dalam twit lain
             if (twitId) {
                 await tx.twit.update({
                     where: { id: twitId },
@@ -177,7 +193,9 @@ export default defineEventHandler(async (event) => {
                 });
 
                 const parentTwit = await tx.twit.findUnique({ where: { id: twitId } });
-                if (parentTwit && parentTwit.userId !== user.id) {
+
+                // Membuat notifikasi untuk user yang memiliki twit (jika ada)
+                if (parentTwit && parentTwit.userId !== user.id) { // Jika twit bukan milik client sendiri
                     await tx.notification.create({
                         data: {
                             userId: parentTwit.userId,

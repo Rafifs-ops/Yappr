@@ -96,19 +96,53 @@ const handleRequest = async (notif, action) => {
                         {{ notif.message }}
                     </p>
 
+                    <!-- Balasan / Komentar -->
                     <div v-if="notif.commentText && notif.type == 'comment'"
-                        class="text-xs text-purple-200 leading-relaxed font-mono mt-3"
-                        v-html="DOMPurify.sanitize(notif.commentText)">
+                        class="mt-3 px-3.5 py-2.5 bg-purple-900/30 border-l-2 border-fuchsia-500 rounded-r-xl text-xs text-purple-100 font-mono leading-relaxed shadow-sm">
+                        <div class="flex items-center gap-1.5 text-[10px] font-orbitron text-fuchsia-400 mb-1">
+                            <i class="bi bi-chat-dots-fill"></i>
+                            <span>KOMENTAR BALASAN:</span>
+                        </div>
+                        <div v-html="DOMPurify.sanitize(notif.commentText)"></div>
                     </div>
 
+                    <!-- Referenced Yappingan Card -->
                     <div v-if="notif.type == 'repost' || notif.type == 'comment' || notif.type == 'like'"
-                        class="border-2 border-purple-800/50/50 rounded-lg p-2 mt-2">
+                        class="mt-3 relative group overflow-hidden rounded-xl bg-[#130722]/80 backdrop-blur-md border border-purple-500/30 hover:border-purple-400/70 transition-all duration-300 shadow-inner hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+                        <!-- Left Neon Accent Bar -->
+                        <div
+                            class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-fuchsia-500 to-indigo-500 group-hover:w-1.5 transition-all duration-300">
+                        </div>
+
+                        <!-- Decorative Watermark Icon -->
+                        <i
+                            class="bi bi-quote absolute -bottom-3 -right-2 text-5xl text-purple-500/5 pointer-events-none select-none"></i>
+
                         <ClientOnly>
-                            <NuxtLink :to="`/twit/${notif.twitId}`" class="block mt-2">
-                                <p class="text-md font-bold text-purple-400 leading-relaxed font-mono mt-4">Yappingan
-                                </p>
-                                <p class="text-xs text-purple-200 leading-relaxed font-mono"
-                                    v-html="DOMPurify.sanitize(notif.twitText)">
+                            <NuxtLink :to="`/twit/${notif.twitId}`" class="block p-3.5 pl-4 relative z-10">
+                                <!-- Top Bar -->
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <div
+                                            class="w-5 h-5 rounded-md bg-purple-900/40 border border-purple-700/50 flex items-center justify-center text-purple-400">
+                                            <i class="bi bi-quote text-xs"></i>
+                                        </div>
+                                        <span
+                                            class="text-[10px] font-orbitron font-bold tracking-widest text-purple-300 uppercase">
+                                            Yappingan
+                                        </span>
+                                    </div>
+                                    <span
+                                        class="text-[10px] font-mono text-purple-400/70 group-hover:text-purple-300 flex items-center gap-1 transition-colors">
+                                        <span>Buka</span>
+                                        <i
+                                            class="bi bi-arrow-up-right text-[10px] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
+                                    </span>
+                                </div>
+
+                                <!-- Text Content -->
+                                <p class="text-xs text-purple-100/90 leading-relaxed font-mono pl-1 line-clamp-3 group-hover:text-white transition-colors"
+                                    v-html="DOMPurify.sanitize(notif.twitText || '')">
                                 </p>
                             </NuxtLink>
                         </ClientOnly>

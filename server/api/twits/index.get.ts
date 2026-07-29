@@ -28,27 +28,27 @@ const formatTwit = (twit: any) => {
 };
 
 export default defineEventHandler(async (event) => {
-    const queryParams = getQuery(event);
-    const cursor = queryParams.cursor;
-    const limit = Math.min(parseInt(queryParams.limit as string) || 10, 50);
+    const queryParams = getQuery(event); // Mendapatkan data query string dari request
+    const cursor = queryParams.cursor; // Mendapatkan nilai dari query string 'cursor', untuk mengambil data berdasarkan tanggal tertentu
+    const limit = Math.min(parseInt(queryParams.limit as string) || 10, 50); // Mendapatkan nilai dari query string 'limit'
 
     let currentUser = null;
     try {
-        currentUser = await session(event);
+        currentUser = await session(event); // Mendapatkan data user dari session
     } catch (e) {
         // Guest view
     }
 
     try {
-        let paginationDate = new Date();
-        if (cursor && cursor !== 'undefined' && cursor !== 'null') {
-            const parsedDate = new Date(cursor as string);
-            if (!isNaN(parsedDate.getTime())) {
-                paginationDate = parsedDate;
+        let paginationDate = new Date(); // Mengambil tanggal hari ini
+        if (cursor && cursor !== 'undefined' && cursor !== 'null') { // Jika cursor ada dan bukan undefined atau null
+            const parsedDate = new Date(cursor as string); // Mengubah cursor menjadi Date
+            if (!isNaN(parsedDate.getTime())) { // Jika cursor berhasil diubah menjadi Date
+                paginationDate = parsedDate; // Mengubah paginationDate menjadi parsedDate
             }
         }
 
-        if (!currentUser) {
+        if (!currentUser) { // Jika user tidak login, mode public
             const publicTwits = await prisma.twit.findMany({
                 where: {
                     user: { isPrivate: false },
@@ -73,6 +73,7 @@ export default defineEventHandler(async (event) => {
             }));
         }
 
+        // Mencari user yang di follow oleh client
         const following = await prisma.follow.findMany({
             where: {
                 followerId: currentUser.id,
@@ -81,9 +82,11 @@ export default defineEventHandler(async (event) => {
             select: { followingId: true }
         });
 
+        // Mengambil id user yang di follow
         const followingIds = following.map(f => f.followingId);
-        followingIds.push(currentUser.id);
+        followingIds.push(currentUser.id); // Menambahkan id user sendiri
 
+        // Mengambil twit milik orang yang di follow dan diri sendiri
         const twitIdsResult = await prisma.twit.findMany({
             where: {
                 userId: { in: followingIds },
@@ -94,6 +97,7 @@ export default defineEventHandler(async (event) => {
             select: { id: true, createdAt: true }
         });
 
+        // Mengambil twit yang di repost oleh orang yang di follow dan diri sendiri
         const repostsResult = await prisma.repost.findMany({
             where: {
                 userId: { in: followingIds },
@@ -104,6 +108,7 @@ export default defineEventHandler(async (event) => {
             select: { twitId: true, createdAt: true }
         });
 
+        // Mengambil twit yang di like oleh orang yang di follow dan diri sendiri
         const likesResult = await prisma.like.findMany({
             where: {
                 userId: { in: followingIds },
@@ -114,16 +119,21 @@ export default defineEventHandler(async (event) => {
             select: { twitId: true, createdAt: true }
         });
 
+        // Menggabungkan hasil twit, twit yang di repost, dan twit yang di like
         const combined = [
             ...twitIdsResult.map(t => ({ id: t.id, date: t.createdAt })),
             ...repostsResult.map(r => ({ id: r.twitId, date: r.createdAt })),
             ...likesResult.map(l => ({ id: l.twitId, date: l.createdAt }))
         ].filter(item => item.id);
 
+        // Mengurutkan hasil twit berdasarkan tanggal
         combined.sort((a, b) => b.date.getTime() - a.date.getTime());
 
+        // Mengambil id twit teratas
         const topIds: string[] = [];
         const seen = new Set();
+
+        // Memastikan tidak ada duplikat id
         for (const item of combined) {
             if (!seen.has(item.id)) {
                 seen.add(item.id);
@@ -132,8 +142,10 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Jika sudah sampau batas akhir twit
         if (topIds.length === 0) return [];
 
+        // Mengambil twit berdasarkan id teratas
         const finalTwits = await prisma.twit.findMany({
             where: { id: { in: topIds } },
             include: {
@@ -146,28 +158,32 @@ export default defineEventHandler(async (event) => {
             }
         });
 
+        // Mengambil twit yang di like oleh client
         const myLikes = await prisma.like.findMany({
             where: { userId: currentUser.id, twitId: { in: topIds } },
             select: { twitId: true }
         });
 
+        // Mengambil twit yang di repost oleh client
         const myReposts = await prisma.repost.findMany({
             where: { userId: currentUser.id, twitId: { in: topIds } },
             select: { twitId: true }
         });
 
-        const likedSet = new Set(myLikes.map(l => l.twitId));
-        const repostedSet = new Set(myReposts.map(r => r.twitId));
+        // Membuat set untuk memudahkan pengecekan
+        const likedSet = new Set(myLikes.map(l => l.twitId)); // output: Set { "twit1", "twit2", ... }
+        const repostedSet = new Set(myReposts.map(r => r.twitId)); // output: Set { "twit1", "twit2", ... }
 
+        // Mengubah hasil menjadi format yang diinginkan
         const result = topIds.map(id => {
-            const twit = finalTwits.find(t => t.id === id);
-            if (!twit) return null;
+            const twit = finalTwits.find(t => t.id === id); // Mencari twit berdasarkan id
+            if (!twit) return null; // Jika twit tidak ditemukan, keluar dari fungsi
             return {
                 ...formatTwit(twit),
-                isLiked: likedSet.has(id),
-                isReposted: repostedSet.has(id)
+                isLiked: likedSet.has(id), // output: true jika twit di like, false jika tidak
+                isReposted: repostedSet.has(id) // output: true jika twit di repost, false jika tidak
             };
-        }).filter(Boolean);
+        }).filter(Boolean); // output: array of twits
 
         return result;
 

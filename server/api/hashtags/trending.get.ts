@@ -2,9 +2,10 @@ import { prisma } from '../../utils/prisma';
 
 export default defineEventHandler(async (event) => {
     try {
-        const dateLimit = new Date();
-        dateLimit.setDate(dateLimit.getDate() - 7);
+        const dateLimit = new Date(); // Mengambil tanggal hari ini
+        dateLimit.setDate(dateLimit.getDate() - 7); // Mengambil tanggal 7 hari yang lalu
 
+        // Mengelompokkan hashtag berdasarkan tag dan menghitung jumlahnya
         const trending = await prisma.twitHashtag.groupBy({
             by: ['tag'],
             where: {
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event) => {
         return trending.map((item: any) => ({
             hashtag: item.tag,
             count: item._count.tag
-        }));
+        })); // outputnya berupa array of object dengan format [{ hashtag: 'tag', count: 10 }, { hashtag: 'tag', count: 10 }, ...]
 
     } catch (error) {
         throw createError({

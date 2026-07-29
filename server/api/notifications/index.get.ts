@@ -3,11 +3,14 @@ import { session } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
     try {
-        const user = await session(event);
+        const user = await session(event); // Mengambil user dari session
+
+        // Jika tidak ada user
         if (!user) {
             throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
         }
 
+        // Mengambil notifikasi
         const notifications = await prisma.notification.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
@@ -16,6 +19,7 @@ export default defineEventHandler(async (event) => {
             }
         });
 
+        // Mengembalikan notifikasi
         return notifications.map((n: any) => ({
             ...n,
             _id: n.id,
@@ -26,7 +30,7 @@ export default defineEventHandler(async (event) => {
                 name: n.sender.username,
                 profileImage: n.sender.photo
             } : null
-        }));
+        })); // output: [{ _id: string, user: string, sender: { _id: string, name: string, profileImage: string } }, ...]
     } catch (error: any) {
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }

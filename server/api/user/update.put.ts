@@ -4,7 +4,9 @@ import { v2 as cloudinary } from 'cloudinary';
 
 export default defineEventHandler(async (event) => {
     try {
-        const config = useRuntimeConfig();
+        const config = useRuntimeConfig(); // Mengambil variabel env dari runTimeConfig
+
+        // Konfigurasi cloudinary
         cloudinary.config({
             cloud_name: config.cloudinaryCloudName,
             api_key: config.cloudinaryApiKey,
@@ -12,24 +14,28 @@ export default defineEventHandler(async (event) => {
             secure: true
         });
 
-        const body = await readBody(event);
-        const currentUser = await session(event);
+        const body = await readBody(event); // Mengambil data body dari request
+        const currentUser = await session(event); // Mengambil user dari session
 
+        // Jika tidak ada user
         if (!currentUser) {
             throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
         }
 
         const { id, username, bio, photo, isPrivate } = body;
 
+        // Jika id tidak sama dengan id user
         if (id && id !== currentUser.id) {
             throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
         }
 
+        // Update data
         const updateData: any = {};
-        if (username) updateData.username = username;
-        if (bio !== undefined) updateData.bio = bio;
-        if (isPrivate !== undefined) updateData.isPrivate = isPrivate;
+        if (username) updateData.username = username; // jika ada request username
+        if (bio !== undefined) updateData.bio = bio; // jika ada request bio
+        if (isPrivate !== undefined) updateData.isPrivate = isPrivate; // jika ada request isPrivate
 
+        // Upload foto ke Cloudinary jika ada request foto
         if (photo && photo.startsWith('data:image')) {
             try {
                 const uploadResult = await cloudinary.uploader.upload(photo, {
@@ -43,6 +49,7 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Cek apakah username sudah digunakan
         if (username) {
             const existingUser = await prisma.user.findFirst({
                 where: {
@@ -55,9 +62,10 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        // Update data user di database
         const updatedUser = await prisma.user.update({
-            where: { id: currentUser.id },
-            data: updateData
+            where: { id: currentUser.id }, // User yang akan diupdate
+            data: updateData // Data yang akan diupdate
         });
 
         return {
