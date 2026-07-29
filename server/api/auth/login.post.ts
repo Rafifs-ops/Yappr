@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
 
     // Jika user tidak ditemukan
     if (!user) {
-        throw createError({ statusCode: 401, statusMessage: 'User belum terdaftar' });
+        throw createError({ statusCode: 400, statusMessage: 'Email atau password salah' });
     }
 
     // Jika user tidak verifikasi

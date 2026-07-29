@@ -44,14 +44,17 @@ export default defineEventHandler(async (event) => {
 
     // Mengubah password baru menjadi hash
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    // Mengupdate password user
+    // Mengupdate password user dan me-reset refreshToken agar sesi di semua perangkat ter-logout
     await prisma.user.update({
         where: { id: user.id },
-        data: { password: hashedPassword }
+        data: {
+            password: hashedPassword,
+            refreshToken: null
+        }
     });
 
-    // Menghapus otp yang sudah kadaluwarsa
-    await prisma.otp.delete({ where: { id: otpDoc.id } });
+    // Menghapus semua otp reset_password untuk email ini
+    await prisma.otp.deleteMany({ where: { email, type: 'reset_password' } });
 
     return { status: 'Password berhasil diubah' };
 });

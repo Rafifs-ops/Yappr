@@ -57,33 +57,33 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 
 ## Alur Authentikasi
 
-1. User Login, server akan memeriksa apakah email nya ada?, apakah emailnya sesuai format?. Jika ada dan sesuai, maka server akan mencari data User ke database.
-2. Jika User ada dan email sudah terverifikasi, maka password dari input user akan dicompare dengan password di database menggunakan bcrypt. Jika true, maka server akan membuat access token dan refresh token dengan payload userId dengan jsonwebtoken
-3. Setelah itu, access dan refresh token akan disimpan di cookie web client. Login berhasil dan Data user nanti akan disimpan di session bagian server
-4. Session server mendapatkan data User dengan cara mengambil access token yang ada di cookie, lalu token tersebut akan digunakan untuk diverify sekaligus di decode untuk mendapatkan userId
-5. Refresh token berfungsi jika access token user sudah kadaluwarsa, maka server akan menggunakan refresh token untuk membuat access token yang baru. Sehingga user tidak perlu login ulang jika access token mereka sudah kadaluwarsa
-6. Lalu, Session akan mencari data user ke database dengan userId yang sudah didapat dari decode token. Data User akan dikembalikan sebagai response backend untuk dikirim ke frontend (client)
+1. User Login, server akan memeriksa apakah email sesuai format. Server kemudian mencari data User di database dan membandingkan password dengan bcrypt. Jika pengguna tidak ditemukan atau password salah, server mengembalikan pesan seragam ("Email atau password salah") agar tidak membocorkan email yang terdaftar (mencegah email enumeration).
+2. Jika User ada, email sudah terverifikasi, dan password cocok, maka server akan membuat access token (15 menit) dan refresh token (7 hari) berisi payload pengguna menggunakan jsonwebtoken, dan menyimpan refresh token di database.
+3. Setelah itu, access dan refresh token akan disimpan di cookie web client dengan pengaturan `httpOnly` dan `secure`. Login berhasil dan data user nantinya akan diproses melalui utilitas session di server.
+4. Session server mendapatkan data User dengan cara mengambil access token yang ada di cookie, lalu token tersebut diverifikasi sekaligus didecode untuk mendapatkan ID pengguna.
+5. Refresh token berfungsi jika access token user sudah kadaluwarsa. Server akan memvalidasi apakah refresh token di cookie cocok dengan yang tersimpan di database dan tidak bernilai null/revoked. Jika valid, server menerapkan rotasi token (membuat access token dan refresh token baru) sehingga user tidak perlu login ulang.
+6. Lalu, Session akan mencari data user ke database menggunakan ID yang sudah didapat dari decode token. Data User (tanpa password dan refresh token) akan dikembalikan sebagai response backend untuk dikirim ke frontend (client).
 
 ---
 
 ## Alur Registrasi
 
-1. User mengisi data-data sekaligus photo profil
-2. Saat request ke endpoint server/api/auth/register.post.ts (untuk daftar), maka akan melewati sebuah middleware untuk menyimpan foto profil ke storage pihak ketiga (cloudinary) dan mendapatkan nama file photo profilnya yang akan dimasukan ke dalam database User
-3. Saat sampai di endpoint API registrasi, server akan memeriksa apakah data nya lengkap, username & email sesuai format yang telah ditentukan, dan apakah ada user lain yang sudah mendaftar dengan data username dan email yang sama.
-4. Jika aman, maka data password yang telah diinput akan di hash dengan bcrypt dengan salt 10. Kemudian data-data user akan diinput ke database User dengan email yang belum terverifikasi dan membuat data kode OTP ke Model Otp (database) yang memiliki kadaluwarsa 5 menit
+1. User mengisi data-data registrasi sekaligus foto profil.
+2. Saat request ke endpoint `server/api/auth/register.post.ts` (untuk daftar), server akan memeriksa terlebih dahulu apakah data yang dikirim lengkap (username, email, password), sesuai format yang telah ditentukan, dan apakah username atau email sudah terdaftar oleh akun terverifikasi lainnya.
+3. Setelah semua pemeriksaan validasi dan pengecekan duplikasi aman, jika ada foto profil yang dilampirkan, baru server akan mengunggah foto profil tersebut ke storage pihak ketiga (Cloudinary) untuk mendapatkan URL file yang akan dimasukkan ke dalam database User.
+4. Jika aman, maka data password yang telah diinput akan di-hash dengan bcrypt dengan salt 10. Kemudian data-data user akan diinput ke database User dengan status email yang belum terverifikasi.
 
-> Catatan: Meskipun data-data yang diinput user langsung masuk ke database, email nya belum terverikasi. Maka user belum bisa langsung dibuatkan session auth untuk login/masuk ke halaman utama
+> Catatan: Meskipun data-data yang diinput user langsung masuk ke database, email nya belum terverifikasi. Maka user belum bisa langsung dibuatkan session auth untuk login/masuk ke halaman utama
 
-5. Saat request ke endpoint `server/api/auth/register.post.ts` (untuk daftar), user juga request ke endpoint `server/api/send-otp.post.ts`. Di endpoint tersebut, server akan mengenerate 6 angka kode otp dan mengirimnya ke user melalui Email user.
-6. Ketika User sudah mengisi kode OTP di frontend, maka user otomatis merequest endpoint `server/api/verify-otp.post.ts` untuk memeriksa apakah otp yang diinput oleh user dengan otp yang dibuat oleh server sudah sesuai?. Jika sesuai, maka akan langsung dibuatkan session login dengan membuat token dan menyimpannya di cookie (sama seperti alur authentikasi di atas). User akan otomatis diarahkan ke halaman utama.
+5. Setelah request ke endpoint `server/api/auth/register.post.ts`, user juga request ke endpoint `server/api/send-otp.post.ts`. Di endpoint tersebut, server terlebih dahulu memeriksa waktu jeda (cooldown 60 detik) untuk mencegah spamming OTP. Jika aman, server akan mengenerate 6 angka kode otp secara kriptografis menggunakan `crypto.randomInt`, meng-hash kode tersebut dengan SHA-256 untuk disimpan di Model Otp (database) yang memiliki kadaluwarsa 5 menit, dan mengirimkan kode aslinya ke user melalui email.
+6. Ketika User sudah mengisi kode OTP di frontend, maka user otomatis merequest endpoint `server/api/verify-otp.post.ts` untuk memeriksa apakah hash OTP yang diinput sesuai dengan yang ada di database dan belum kadaluwarsa. Jika sesuai, maka status verifikasi email diperbarui dan langsung dibuatkan session login dengan membuat token serta menyimpannya di cookie (sama seperti alur authentikasi di atas). User akan otomatis diarahkan ke halaman utama.
 
 ---
 
 ## Alur Logout
 
-1. Jika user klik tombol logout di profile, maka otomatis akan request ke endpoint `server/api/logout.post.ts`. Di endpoint tersebut, server akan menghapus token yang ada di cookie web client, sehingga session tidak lagi bisa mendapatkan data user di database karena tokennya sudah dihapus.
-2. User otomatis akan diarahkan ke halaman login
+1. Jika user klik tombol logout di profile, maka otomatis akan request ke endpoint `server/api/auth/logout.post.ts`. Di endpoint tersebut, server pertama-tama membaca sesi aktif dan mengatur `refreshToken` menjadi null pada database agar token sesi tidak bisa disalahgunakan lagi di perangkat lain.
+2. Setelah itu, server akan menghapus token yang ada di cookie web client (`auth_token` dan `refresh_token`), sehingga session tidak lagi bisa mendapatkan data user. User otomatis akan diarahkan ke halaman login.
 
 ---
 
@@ -122,10 +122,10 @@ Pengguna dapat membuat ruang obrolan (room chat) dengan pengguna lain secara spe
 
 ## Alur Reset Password
 
-1. User hanya bisa reset password saat di halaman login ketika user lupa passwordnya
-2. Saat tiba di halaman reset password user akan merequest ke endpoint `server/api/send-otp.post.ts` untuk menerima kode otp via email
-3. Jika sudah terkirim maka user bisa langsung mengisi password baru beserta kode otp. Lalu user click tombol ubah password sambil request ke endpoint `server/api/reset-password.post.ts`. Di endpoint ini, server juga memverifikasi kode otp sama hal nya dengan endpoint `server/api/verify-otp.post.ts`
-4. Jika otp tidak sesuai, maka ubah password gagal. Jika otp sesuai, maka password berhasil diubah dan user otomatis akan diarahkan ke halaman login
+1. User bisa melakukan reset password melalui halaman lupa password (`/auth/reset-password`) ketika lupa kata sandi akunnya.
+2. Saat meminta OTP, user akan merequest ke endpoint `server/api/send-otp.post.ts`. Server memeriksa jeda waktu (cooldown 60 detik) dan jika email tidak terdaftar di database, server tetap mengembalikan respons sukses generik agar tidak membocorkan informasi email yang terdaftar (mencegah email enumeration). Jika terdaftar, server membuat OTP acak secara aman, meng-hash-nya ke database, dan mengirimkan kode ke email user.
+3. Jika sudah terkirim maka user bisa langsung mengisi password baru beserta kode otp. Lalu user klik tombol ubah password sambil request ke endpoint `server/api/reset-password.post.ts`. Di endpoint ini, server memverifikasi hash kode otp dan mengecek masa kadaluwarsanya.
+4. Jika otp tidak sesuai atau kadaluwarsa, maka ubah password gagal. Jika sesuai, maka password baru di-hash dengan bcrypt dan disimpan ke database. Server juga me-reset `refreshToken` pengguna menjadi null pada database untuk me-revoke seluruh sesi login aktif di semua perangkat serta menghapus semua kode otp reset password untuk email tersebut. User otomatis akan diarahkan ke halaman login.
 
 ---
 

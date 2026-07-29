@@ -7,7 +7,11 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
     'nuxt-security',
+    '@nuxthub/core'
   ],
+  hub: {
+    db: 'sqlite', // Aktifkan fitur database SQLite (D1 / Turso)
+  },
   app: {
     head: {
       link: [
@@ -16,10 +20,7 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    googleClientId: process.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     authSecret: process.env.AUTH_SECRET,
-    authOrigin: process.env.AUTH_ORIGIN,
     jwtSecret: process.env.JWT_SECRET,
     cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
@@ -27,6 +28,9 @@ export default defineNuxtConfig({
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS,
     databaseUrl: process.env.DATABASE_URL,
+    tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
+    tursoAuthToken: process.env.TURSO_AUTH_TOKEN,
+    nodeEnv: process.env.NODE_ENV,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

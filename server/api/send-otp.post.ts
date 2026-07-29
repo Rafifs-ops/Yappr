@@ -12,6 +12,23 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Email dan tipe (register/reset_password) wajib diisi' });
     }
 
+    // Pengecekan cooldown (60 detik) untuk mencegah spamming OTP
+    const recentOtp = await prisma.otp.findFirst({
+        where: {
+            email,
+            type,
+            createdAt: {
+                gt: new Date(Date.now() - 60 * 1000) // 60 detik terakhir
+            }
+        }
+    });
+    if (recentOtp) {
+        throw createError({
+            statusCode: 429,
+            statusMessage: 'Harap tunggu 60 detik sebelum meminta kode OTP kembali.'
+        });
+    }
+
     // Pengecekan setiap tipe
     if (type === 'register') {
         const user = await prisma.user.findUnique({ where: { email } });
@@ -24,13 +41,14 @@ export default defineEventHandler(async (event) => {
     } else if (type === 'reset_password') {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' });
+            // Untuk mencegah enumerasi email, kembalikan respons sukses tanpa mengirim email
+            return { status: 'Jika email terdaftar, kode OTP telah dikirim' };
         }
     } else {
         throw createError({ statusCode: 400, statusMessage: 'Tipe OTP tidak valid' });
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // Membuat otp random 6 digit
+    const otpCode = crypto.randomInt(100000, 1000000).toString(); // Membuat otp random 6 digit secara aman
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
     const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex'); // Mengubah otp menjadi hash

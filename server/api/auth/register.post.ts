@@ -1,17 +1,18 @@
 import { prisma } from '../../utils/prisma';
 import bcrypt from 'bcryptjs';
+import { v2 as cloudinary } from 'cloudinary';
 
 export default defineEventHandler(async (event) => {
     const data = await readBody(event); // Mengambil data body request
-    const photo = event.context.photo; // Mengambil photo dari event context
+    let photo = event.context.photo; // Mengambil photo dari event context jika ada
 
     const username = data.username?.trim().toLowerCase(); // Mengambil data username dari body request dan mengubahnya menjadi huruf kecil
     const email = data.email?.trim().toLowerCase(); // Mengambil data email dari body request dan mengubahnya menjadi huruf kecil
     const { password, bio } = data; // Mengambil data password dan bio dari body request
 
     // Validasi data request apakah sudah lengkap atau belum
-    if (!username && !password && !email && !bio) {
-        throw createError({ statusCode: 400, statusMessage: 'data belum lengkap' });
+    if (!username || !password || !email) {
+        throw createError({ statusCode: 400, statusMessage: 'Data wajib melengkapi username, email, dan password' });
     }
 
     // Validasi format username
@@ -52,8 +53,33 @@ export default defineEventHandler(async (event) => {
                 throw createError({ statusCode: 409, statusMessage: 'Username sudah terdaftar' });
             }
         }
+    }
 
-        // Jika user belum terverifikasi
+    // Setelah validasi lolos dan tidak ada user terverifikasi yang duplikat, baru lakukan upload foto ke Cloudinary
+    if (!photo && data.file) {
+        try {
+            const config = useRuntimeConfig();
+            cloudinary.config({
+                cloud_name: config.cloudinaryCloudName,
+                api_key: config.cloudinaryApiKey,
+                api_secret: config.cloudinaryApiSecret,
+                secure: true
+            });
+            const result = await cloudinary.uploader.upload(data.file, {
+                folder: 'user_profile_photos_RTwit',
+                use_filename: true,
+            });
+            photo = result.secure_url;
+        } catch (error) {
+            throw createError({
+                statusCode: 500,
+                statusMessage: 'Gagal upload foto profil ke Cloudinary',
+            });
+        }
+    }
+
+    // Jika ada user belum terverifikasi dengan email yang sama, perbarui datanya
+    if (existingUsers.length > 0) {
         const unverifiedUser = existingUsers.find((u: any) => !u.emailVerifiedAt);
         if (unverifiedUser && unverifiedUser.email === email) {
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -100,3 +126,4 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message });
     }
 });
+
