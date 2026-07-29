@@ -1,23 +1,14 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSQL } from '@prisma/adapter-libsql/web' // Gunakan /web untuk Vercel Edge/Serverless
+import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
-let prisma: PrismaClient
-const runtimeConfig = useRuntimeConfig()
+const config = useRuntimeConfig()
 
-if (runtimeConfig.nodeEnv === 'production') {
-    // Menggunakan koneksi database dari Turso / LibSQL saat production
-    const url = (runtimeConfig.tursoDatabaseUrl || runtimeConfig.databaseUrl || process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || 'file:./dev.db') as string
-    const authToken = (runtimeConfig.tursoAuthToken || process.env.TURSO_AUTH_TOKEN) as string | undefined
+const adapter = new PrismaLibSQL({
+    url: config.tursoDatabaseUrl,
+    authToken: config.tursoAuthToken,
+})
 
-    const adapter = new PrismaLibSQL({
-        url,
-        authToken,
-    })
-    prisma = new PrismaClient({ adapter })
-} else {
-    // Koneksi dev.db lokal saat development
-    prisma = new PrismaClient()
-}
+const prisma = new PrismaClient({ adapter })
 
 export { prisma }
 export default prisma
