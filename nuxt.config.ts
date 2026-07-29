@@ -7,11 +7,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/cloudinary',
     'nuxt-security',
-    '@nuxthub/core'
   ],
-  hub: {
-    db: 'sqlite', // Aktifkan fitur database SQLite (D1 / Turso)
-  },
   app: {
     head: {
       link: [
