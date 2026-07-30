@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { formatDate } from '~/utils/formatDate';
 import DOMPurify from 'isomorphic-dompurify';
 import { useToast } from '~/composables/useToast';
@@ -49,6 +50,13 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+
+const formattedHashtags = computed(() => {
+    if (!props.twit?.hashtags || !Array.isArray(props.twit.hashtags)) return [];
+    return props.twit.hashtags
+        .map((h: any) => (typeof h === 'string' ? h : (h?.tag || ''))?.replace(/^#/, ''))
+        .filter(Boolean);
+});
 
 const shareTwit = async () => {
     // Buat URL absolut untuk twit ini
@@ -125,8 +133,8 @@ const shareTwit = async () => {
             <div v-html="DOMPurify.sanitize(twit.text)"></div>
         </div>
 
-        <div v-if="twit.hashtags?.length" class="flex flex-wrap gap-2 mt-2">
-            <NuxtLink v-for="(hashtag, idx) in twit.hashtags" :key="idx" :to="`/twits/${hashtag}`"
+        <div v-if="formattedHashtags.length" class="flex flex-wrap gap-2 mt-2">
+            <NuxtLink v-for="(hashtag, idx) in formattedHashtags" :key="idx" :to="`/twits/${hashtag}`"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-xs font-mono transition-all duration-300">
                 <span>#{{ hashtag }}</span>
             </NuxtLink>

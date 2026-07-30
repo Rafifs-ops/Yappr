@@ -1,5 +1,6 @@
 import { prisma } from "../../../../utils/prisma";
 import { session } from "../../../../utils/session";
+import { formatTwit } from "../../../../utils/formatTwit";
 
 export default defineEventHandler(async (event) => {
     try {
@@ -14,9 +15,11 @@ export default defineEventHandler(async (event) => {
                 twit: {
                     include: {
                         user: { select: { id: true, username: true, photo: true, isPrivate: true } },
+                        hashtags: { select: { tag: true } },
                         reference: {
                             include: {
-                                user: { select: { id: true, username: true, photo: true } }
+                                user: { select: { id: true, username: true, photo: true } },
+                                hashtags: { select: { tag: true } }
                             }
                         }
                     }
@@ -56,19 +59,7 @@ export default defineEventHandler(async (event) => {
         });
 
         // Format twit
-        const formattedTwits = twits.map(twit => ({
-            ...twit,
-            _id: twit.id,
-            user: twit.user ? { ...twit.user, _id: twit.user.id } : null,
-            SubTwit: {
-                isSubTwit: twit.isSubTwit,
-                reference: twit.reference ? {
-                    ...twit.reference,
-                    _id: twit.reference.id,
-                    user: twit.reference.user ? { ...twit.reference.user, _id: twit.reference.user.id } : null
-                } : null
-            }
-        }));
+        const formattedTwits = twits.map(twit => formatTwit(twit));
 
         // Jika user tidak login, maka isLiked dan isReposted adalah false
         if (!currentUser) {

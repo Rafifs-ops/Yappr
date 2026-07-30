@@ -1,5 +1,6 @@
 import { prisma } from '../../utils/prisma';
 import { session } from "../../utils/session";
+import { formatTwit } from "../../utils/formatTwit";
 
 export default defineEventHandler(async (event) => {
     try {
@@ -47,16 +48,13 @@ export default defineEventHandler(async (event) => {
                         photo: true,
                         isPrivate: true
                     }
-                }
+                },
+                hashtags: { select: { tag: true } }
             }
         });
 
         // Mengubah format twit user
-        const userTweets = userTweetsRaw.map((t: any) => ({
-            ...t,
-            _id: t.id,
-            user: { ...t.user, _id: t.user.id }
-        }));
+        const userTweets = userTweetsRaw.map((t: any) => formatTwit(t));
 
         let currentUser = null;
         try {

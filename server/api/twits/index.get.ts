@@ -1,31 +1,6 @@
 import { prisma } from "../../utils/prisma";
 import { session } from "../../utils/session";
-
-/**
- * Helper to format Prisma Twit object for frontend compatibility
- */
-const formatTwit = (twit: any) => {
-    if (!twit) return null;
-    return {
-        ...twit,
-        _id: twit.id,
-        user: twit.user ? {
-            ...twit.user,
-            _id: twit.user.id
-        } : null,
-        SubTwit: {
-            isSubTwit: twit.isSubTwit,
-            reference: twit.reference ? {
-                ...twit.reference,
-                _id: twit.reference.id,
-                user: twit.reference.user ? {
-                    ...twit.reference.user,
-                    _id: twit.reference.user.id
-                } : null
-            } : null
-        }
-    };
-};
+import { formatTwit } from "../../utils/formatTwit";
 
 export default defineEventHandler(async (event) => {
     const queryParams = getQuery(event); // Mendapatkan data query string dari request
@@ -58,9 +33,11 @@ export default defineEventHandler(async (event) => {
                 take: limit,
                 include: {
                     user: { select: { id: true, username: true, photo: true } },
+                    hashtags: { select: { tag: true } },
                     reference: {
                         include: {
-                            user: { select: { id: true, username: true, photo: true } }
+                            user: { select: { id: true, username: true, photo: true } },
+                            hashtags: { select: { tag: true } }
                         }
                     }
                 }
@@ -150,9 +127,11 @@ export default defineEventHandler(async (event) => {
             where: { id: { in: topIds } },
             include: {
                 user: { select: { id: true, username: true, photo: true } },
+                hashtags: { select: { tag: true } },
                 reference: {
                     include: {
-                        user: { select: { id: true, username: true, photo: true } }
+                        user: { select: { id: true, username: true, photo: true } },
+                        hashtags: { select: { tag: true } }
                     }
                 }
             }

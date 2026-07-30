@@ -213,6 +213,7 @@ export default defineEventHandler(async (event) => {
             return {
                 ...newTwit,
                 _id: newTwit.id,
+                hashtags: (hashtags || []).map((tag: string) => tag.replace(/^#/, '').toLowerCase().trim()).filter(Boolean),
                 SubTwit: {
                     isSubTwit: newTwit.isSubTwit,
                     reference: newTwit.referenceId

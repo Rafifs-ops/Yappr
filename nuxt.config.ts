@@ -67,7 +67,13 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       websocket: true
+    },
+    externals: {
+      inline: ['isomorphic-dompurify', 'html-encoding-sniffer', '@exodus/bytes']
     }
+  },
+  build: {
+    transpile: ['isomorphic-dompurify', 'html-encoding-sniffer', '@exodus/bytes']
   },
   vite: {
     optimizeDeps: {

@@ -92,6 +92,13 @@ const deleteMainTwit = async () => {
         toast.error(e.statusMessage || 'Gagal menghapus twit', 'Hapus Gagal');
     }
 };
+
+const formattedHashtags = computed(() => {
+    if (!data.value?.response?.hashtags || !Array.isArray(data.value.response.hashtags)) return [];
+    return data.value.response.hashtags
+        .map((h) => (typeof h === 'string' ? h : (h?.tag || ''))?.replace(/^#/, ''))
+        .filter(Boolean);
+});
 </script>
 
 <template>
@@ -148,10 +155,11 @@ const deleteMainTwit = async () => {
                     </button>
                 </div>
 
-                <div class="text-white text-sm mt-3 twit-content leading-relaxed" v-html="DOMPurify.sanitize(data.response?.text)">
+                <div class="text-white text-sm mt-3 twit-content leading-relaxed"
+                    v-html="DOMPurify.sanitize(data.response?.text)">
                 </div>
-                <div class="flex flex-wrap gap-2 mt-2" v-if="data.response.hashtags?.length">
-                    <NuxtLink :to="`/twits/${hashtag}`" v-for="hashtag in data.response.hashtags"
+                <div class="flex flex-wrap gap-2 mt-2" v-if="formattedHashtags.length">
+                    <NuxtLink :to="`/twits/${hashtag}`" v-for="hashtag in formattedHashtags"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-800/40 bg-purple-900/30 text-purple-300 hover:border-purple-300 hover:text-purple-600 text-xs font-mono transition-all duration-300">
                         <span>#{{ hashtag }}</span>
                     </NuxtLink>
