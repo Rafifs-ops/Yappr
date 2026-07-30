@@ -74,7 +74,6 @@ export default defineNuxtConfig({
       include: [
         '@vue/devtools-core',
         '@vue/devtools-kit',
-        'xss',
         '@tiptap/vue-3',
         '@tiptap/starter-kit',
         '@tiptap/extension-mention',

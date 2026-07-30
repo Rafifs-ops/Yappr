@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from '~/utils/sanitize';
 import { useToast } from '~/composables/useToast';
 
 interface User {
@@ -130,7 +129,7 @@ const shareTwit = async () => {
 
         <!-- Twit Body Content -->
         <div class="text-white text-sm mt-1 twit-content leading-relaxed">
-            <div v-html="DOMPurify.sanitize(twit.text)"></div>
+            <div v-html="twit.text"></div>
         </div>
 
         <div v-if="formattedHashtags.length" class="flex flex-wrap gap-2 mt-2">

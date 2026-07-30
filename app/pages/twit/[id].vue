@@ -1,7 +1,6 @@
 <script setup>
 import { useAuth } from '../../stores/Auth';
 import { useToast } from '~/composables/useToast';
-import DOMPurify from '~/utils/sanitize';
 
 const auth = useAuth();
 const toast = useToast();
@@ -156,7 +155,7 @@ const formattedHashtags = computed(() => {
                 </div>
 
                 <div class="text-white text-sm mt-3 twit-content leading-relaxed"
-                    v-html="DOMPurify.sanitize(data.response?.text)">
+                    v-html="data.response?.text">
                 </div>
                 <div class="flex flex-wrap gap-2 mt-2" v-if="formattedHashtags.length">
                     <NuxtLink :to="`/twits/${hashtag}`" v-for="hashtag in formattedHashtags"

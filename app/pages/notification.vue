@@ -3,7 +3,6 @@ import { useAuth } from '~/stores/Auth';
 import { useToast } from '~/composables/useToast';
 import { getIcon, getIconColor } from '~/utils/notifIcon';
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from '~/utils/sanitize';
 
 const { $csrfFetch } = useNuxtApp();
 const auth = useAuth();
@@ -103,7 +102,7 @@ const handleRequest = async (notif, action) => {
                             <i class="bi bi-chat-dots-fill"></i>
                             <span>KOMENTAR BALASAN:</span>
                         </div>
-                        <div v-html="DOMPurify.sanitize(notif.commentText)"></div>
+                        <div v-html="notif.commentText"></div>
                     </div>
 
                     <!-- Referenced Yappingan Card -->
@@ -142,7 +141,7 @@ const handleRequest = async (notif, action) => {
 
                                 <!-- Text Content -->
                                 <p class="text-xs text-purple-100/90 leading-relaxed font-mono pl-1 line-clamp-3 group-hover:text-white transition-colors"
-                                    v-html="DOMPurify.sanitize(notif.twitText || '')">
+                                    v-html="notif.twitText || ''">
                                 </p>
                             </NuxtLink>
                         </ClientOnly>
