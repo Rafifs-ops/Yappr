@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from '~/utils/sanitize';
 import { useToast } from '~/composables/useToast';
 
 interface User {

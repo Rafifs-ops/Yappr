@@ -1,7 +1,7 @@
 <script setup>
 import { useAuth } from '../stores/Auth';
 import { useToast } from '~/composables/useToast';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from '~/utils/sanitize';
 const auth = useAuth();
 const toast = useToast();
 const { $csrfFetch } = useNuxtApp();

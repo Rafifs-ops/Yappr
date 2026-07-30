@@ -67,20 +67,14 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       websocket: true
-    },
-    externals: {
-      inline: ['isomorphic-dompurify', 'html-encoding-sniffer', '@exodus/bytes']
     }
-  },
-  build: {
-    transpile: ['isomorphic-dompurify', 'html-encoding-sniffer', '@exodus/bytes']
   },
   vite: {
     optimizeDeps: {
       include: [
         '@vue/devtools-core',
         '@vue/devtools-kit',
-        'isomorphic-dompurify',
+        'sanitize-html',
         '@tiptap/vue-3',
         '@tiptap/starter-kit',
         '@tiptap/extension-mention',

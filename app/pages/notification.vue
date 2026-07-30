@@ -3,7 +3,7 @@ import { useAuth } from '~/stores/Auth';
 import { useToast } from '~/composables/useToast';
 import { getIcon, getIconColor } from '~/utils/notifIcon';
 import { formatDate } from '~/utils/formatDate';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from '~/utils/sanitize';
 
 const { $csrfFetch } = useNuxtApp();
 const auth = useAuth();
