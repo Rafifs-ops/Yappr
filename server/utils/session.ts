@@ -41,29 +41,25 @@ export const session = async (event: any) => {
         }
     }
 
+    let existingUser: any = null;
+
     // Jika token expired maka akan mengambil refresh token
     if (!decodedToken && refreshTokenCookie) {
         try {
             const decodedRefresh = jwt.verify(refreshTokenCookie, secretAuthKey as string) as any; // Verifikasi refresh token
-            const user = await prisma.user.findUnique({ where: { id: decodedRefresh.id } }); // Mengambil user berdasarkan refresh token
+            const refreshUserId = decodedRefresh.id || decodedRefresh.userId;
+            existingUser = await prisma.user.findUnique({ where: { id: refreshUserId } }); // Mengambil user berdasarkan refresh token
 
             // Jika user tidak ada, refreshToken null/sudah di-reset, atau refresh token tidak cocok, hapus cookie dan tampilkan error
-            if (!user || !user.refreshToken || user.refreshToken !== refreshTokenCookie) {
+            if (!existingUser || !existingUser.refreshToken || existingUser.refreshToken !== refreshTokenCookie) {
                 deleteCookie(event, 'auth_token', { path: '/' }); // Menghapus cookie auth_token
                 deleteCookie(event, 'refresh_token', { path: '/' }); // Menghapus cookie refresh_token
                 throw createError({ statusCode: 401, statusMessage: 'Unauthorized' }); // Menampilkan error jika tidak dapat login
             }
 
-            // Membuat token dan refresh token baru
-            const payload = { id: user.id, username: user.username, email: user.email };
+            // Membuat token access baru (tanpa merotasi refreshToken di database agar terhindar dari race condition saat concurrent request atau SSR)
+            const payload = { id: existingUser.id, username: existingUser.username, email: existingUser.email };
             token = jwt.sign(payload, secretAuthKey as string, { expiresIn: '15m' }); // Membuat token baru
-            const newRefreshToken = jwt.sign(payload, secretAuthKey as string, { expiresIn: '7d' }); // Membuat refresh token baru
-
-            // Menyimpan refresh token baru ke database
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { refreshToken: newRefreshToken }
-            });
 
             // Menyimpan token baru ke cookie
             setCookie(event, 'auth_token', token, {
@@ -72,8 +68,8 @@ export const session = async (event: any) => {
                 secure: true,
                 path: '/',
             });
-            // Menyimpan refresh token baru ke cookie
-            setCookie(event, 'refresh_token', newRefreshToken, {
+            // Memperbarui masa aktif cookie refresh_token (7 hari) dengan nilai token yang sama
+            setCookie(event, 'refresh_token', refreshTokenCookie, {
                 maxAge: 60 * 60 * 24 * 7,  // 7 hari
                 httpOnly: true,
                 secure: true,
@@ -96,8 +92,8 @@ export const session = async (event: any) => {
 
     try {
         const userId = decodedToken.id || decodedToken.userId; // Mengambil user ID dari decoded token
-        // Periksa apakah user masih ada di database ?
-        const user = await prisma.user.findUnique({ where: { id: userId } }); // Mengambil user berdasarkan user ID
+        // Gunakan user yang sudah diambil saat validasi refresh token jika ada, atau query ke database
+        const user = existingUser || await prisma.user.findUnique({ where: { id: userId } });
 
         // Jika user tidak ada maka akan menghapus cookie dan menampilkan error
         if (!user) {
