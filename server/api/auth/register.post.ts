@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: 'Format email tidak valid.' });
     }
 
+    // Validasi panjang password
     if (password.length < 6) {
         throw createError({ statusCode: 400, statusMessage: 'Password minimal 6 karakter' });
     }
@@ -45,11 +46,11 @@ export default defineEventHandler(async (event) => {
 
         if (verifiedUser) {
             // Memeriksa apakah user sudah terdaftar
-            if (verifiedUser.email === email && verifiedUser.username === username) {
+            if (verifiedUser.email === email && verifiedUser.username === username) { // Jika Username dan Email sudah dipakai
                 throw createError({ statusCode: 409, statusMessage: 'Username dan Email sudah terdaftar' });
-            } else if (verifiedUser.email === email) {
+            } else if (verifiedUser.email === email) { // Jika Email sudah dipakai
                 throw createError({ statusCode: 409, statusMessage: 'Email sudah terdaftar' });
-            } else {
+            } else { // Jika Username sudah dipakai
                 throw createError({ statusCode: 409, statusMessage: 'Username sudah terdaftar' });
             }
         }
@@ -58,7 +59,7 @@ export default defineEventHandler(async (event) => {
     // Setelah validasi lolos dan tidak ada user terverifikasi yang duplikat, baru lakukan upload foto ke Cloudinary
     if (!photo && data.file) {
         try {
-            const config = useRuntimeConfig();
+            const config = useRuntimeConfig(); //mengambil secret key di .env
             cloudinary.config({
                 cloud_name: config.cloudinaryCloudName,
                 api_key: config.cloudinaryApiKey,
@@ -69,8 +70,8 @@ export default defineEventHandler(async (event) => {
                 folder: 'user_profile_photos_RTwit',
                 use_filename: true,
             });
-            photo = result.secure_url;
-        } catch (error) {
+            photo = result.secure_url; //Mengambil URL foto yang sudah diupload ke Cloudinary
+        } catch (error) { //catch error jika upload gagal
             throw createError({
                 statusCode: 500,
                 statusMessage: 'Gagal upload foto profil ke Cloudinary',
@@ -81,6 +82,8 @@ export default defineEventHandler(async (event) => {
     // Jika ada user belum terverifikasi dengan email yang sama, perbarui datanya
     if (existingUsers.length > 0) {
         const unverifiedUser = existingUsers.find((u: any) => !u.emailVerifiedAt);
+
+        // Jika user belum terverifikasi dan email cocok dengan data email dari request
         if (unverifiedUser && unverifiedUser.email === email) {
             const hashedPassword = await bcrypt.hash(password, 10);
             await prisma.user.update({
